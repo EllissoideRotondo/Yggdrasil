@@ -115,7 +115,7 @@ std::string generic_to_string(const GenericType& value)
 
 std::vector<std::int64_t> generic_to_int_vector(const GenericType& value)
 {
-  const auto raw = static_cast<std::vector<casadi_int>>(value);
+  const auto raw = value.to_int_vector();
   std::vector<std::int64_t> out;
   out.reserve(raw.size());
   for(const auto item : raw)
@@ -127,12 +127,12 @@ std::vector<std::int64_t> generic_to_int_vector(const GenericType& value)
 
 std::vector<double> generic_to_double_vector(const GenericType& value)
 {
-  return static_cast<std::vector<double>>(value);
+  return value.to_double_vector();
 }
 
 std::vector<std::string> generic_to_string_vector(const GenericType& value)
 {
-  return static_cast<std::vector<std::string>>(value);
+  return value.to_string_vector();
 }
 
 std::int64_t generic_dict_size(const GenericType& value)

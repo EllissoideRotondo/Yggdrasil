@@ -163,6 +163,34 @@ Function function_fold(const Function& f, const std::int64_t n, const GenericTyp
   return f.fold(checked_nonnegative(n, "n"), generic_as_dict(options, "fold options"));
 }
 
+std::vector<bool> function_which_depends(
+  const Function& f,
+  const std::string& input_name,
+  jlcxx::ArrayRef<std::string> output_names,
+  const std::int64_t order,
+  const bool transpose)
+{
+  return f.which_depends(
+    input_name,
+    to_vector(output_names),
+    checked_nonnegative(order, "order"),
+    transpose);
+}
+
+std::vector<bool> function_which_depends_one(
+  const Function& f,
+  const std::string& input_name,
+  const std::string& output_name,
+  const std::int64_t order,
+  const bool transpose)
+{
+  return f.which_depends(
+    input_name,
+    std::vector<std::string>{output_name},
+    checked_nonnegative(order, "order"),
+    transpose);
+}
+
 std::string function_serialize(const Function& f, const GenericType& options)
 {
   return f.serialize(generic_as_dict(options, "serialize options"));
@@ -279,6 +307,8 @@ void register_function_bindings(jlcxx::Module& mod)
   mod.method(raw_method("function_mapaccum_names"), &function_mapaccum_names);
   mod.method(raw_method("function_mapaccum_default"), &function_mapaccum_default);
   mod.method(raw_method("function_fold"), &function_fold);
+  mod.method(raw_method("function_which_depends"), &function_which_depends);
+  mod.method(raw_method("function_which_depends"), &function_which_depends_one);
   mod.method(raw_method("function_serialize"), &function_serialize);
   mod.method(raw_method("function_save"), &function_save);
   mod.method(raw_method("function_deserialize"), &function_deserialize);

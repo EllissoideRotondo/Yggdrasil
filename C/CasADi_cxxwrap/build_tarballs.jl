@@ -11,7 +11,7 @@ sources = [
 ]
 
 script = raw"""
-cd $WORKSPACE/srcdir/bundled
+cd $WORKSPACE/srcdir
 install_license LICENSE
 
 cmake -B build -S . \

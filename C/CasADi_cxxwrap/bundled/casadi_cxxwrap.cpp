@@ -26,6 +26,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
   casadi_cxxwrap::register_matrix_bindings(mod);
   casadi_cxxwrap::register_function_bindings(mod);
+  casadi_cxxwrap::register_callback_bindings(mod);
   casadi_cxxwrap::register_generic_type_bindings(mod);
   casadi_cxxwrap::register_sparsity_bindings(mod);
   casadi_cxxwrap::register_factory_bindings(mod);

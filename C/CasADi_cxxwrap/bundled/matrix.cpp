@@ -84,6 +84,74 @@ T hessian_gradient(const T& expression, const T& variable)
   return gradient;
 }
 
+template<typename T>
+std::vector<T> symbolic_variables(const T& expression)
+{
+  return symvar(expression);
+}
+
+template<typename T>
+std::vector<bool> symbolic_dependencies(
+  const T& expression,
+  const T& variable,
+  const std::int64_t order,
+  const bool transpose)
+{
+  return which_depends(expression, variable, checked_nonnegative(order, "order"), transpose);
+}
+
+template<typename T>
+bool symbolic_contains(jlcxx::ArrayRef<T> values, const T& needle)
+{
+  return contains(to_vector(values), needle);
+}
+
+template<typename T>
+bool symbolic_contains_all(jlcxx::ArrayRef<T> values, jlcxx::ArrayRef<T> needles)
+{
+  return contains_all(to_vector(values), to_vector(needles));
+}
+
+template<typename T>
+bool symbolic_contains_any(jlcxx::ArrayRef<T> values, jlcxx::ArrayRef<T> needles)
+{
+  return contains_any(to_vector(values), to_vector(needles));
+}
+
+template<typename T>
+std::vector<T> symbolic_substitute_vector(
+  jlcxx::ArrayRef<T> expressions,
+  jlcxx::ArrayRef<T> variables,
+  jlcxx::ArrayRef<T> replacements)
+{
+  return substitute(to_vector(expressions), to_vector(variables), to_vector(replacements));
+}
+
+template<typename T>
+std::vector<T> symbolic_cse_vector(jlcxx::ArrayRef<T> expressions)
+{
+  return cse(to_vector(expressions));
+}
+
+template<typename T>
+std::int64_t symbolic_node_count(const T& expression)
+{
+  return static_cast<std::int64_t>(n_nodes(expression));
+}
+
+MX mx_graph_substitute(const MX& expression, jlcxx::ArrayRef<MX> variables, jlcxx::ArrayRef<MX> replacements)
+{
+  return graph_substitute(expression, to_vector(variables), to_vector(replacements));
+}
+
+std::vector<MX> mx_graph_substitute_vector(
+  jlcxx::ArrayRef<MX> expressions,
+  jlcxx::ArrayRef<MX> variables,
+  jlcxx::ArrayRef<MX> replacements)
+{
+  return graph_substitute(to_vector(expressions), to_vector(variables), to_vector(replacements));
+}
+
 std::vector<double> dm_full(const DM& value)
 {
   std::vector<double> out;
@@ -198,6 +266,34 @@ void register_calculus(jlcxx::Module& mod, const std::string& prefix)
   mod.method(raw_method(prefix, "hessian_gradient"), &hessian_gradient<T>);
 }
 
+template<typename T>
+void register_symbolic_utilities(jlcxx::Module& mod, const std::string& prefix)
+{
+  mod.method(raw_method(prefix, "symvar"), &symbolic_variables<T>);
+  mod.method(raw_method(prefix, "depends_on"), [](const T& expression, const T& variable) {
+    return depends_on(expression, variable);
+  });
+  mod.method(raw_method(prefix, "contains"), &symbolic_contains<T>);
+  mod.method(raw_method(prefix, "contains_all"), &symbolic_contains_all<T>);
+  mod.method(raw_method(prefix, "contains_any"), &symbolic_contains_any<T>);
+  mod.method(raw_method(prefix, "substitute"), [](const T& expression, const T& variable, const T& replacement) {
+    return substitute(expression, variable, replacement);
+  });
+  mod.method(raw_method(prefix, "substitute_vector"), &symbolic_substitute_vector<T>);
+  mod.method(raw_method(prefix, "which_depends"), &symbolic_dependencies<T>);
+  mod.method(raw_method(prefix, "simplify"), [](const T& expression) {
+    return simplify(expression);
+  });
+  mod.method(raw_method(prefix, "n_nodes"), &symbolic_node_count<T>);
+  mod.method(raw_method(prefix, "cse"), [](const T& expression) {
+    return cse(expression);
+  });
+  mod.method(raw_method(prefix, "cse_vector"), &symbolic_cse_vector<T>);
+  mod.method(raw_method(prefix, "jacobian_sparsity"), [](const T& expression, const T& variable) {
+    return jacobian_sparsity(expression, variable);
+  });
+}
+
 void register_matrix_bindings(jlcxx::Module& mod)
 {
   register_matrix_common<SX>(mod, "sx");
@@ -205,6 +301,11 @@ void register_matrix_bindings(jlcxx::Module& mod)
   register_matrix_common<MX>(mod, "mx");
   register_calculus<SX>(mod, "sx");
   register_calculus<MX>(mod, "mx");
+  register_symbolic_utilities<SX>(mod, "sx");
+  register_symbolic_utilities<MX>(mod, "mx");
+
+  mod.method(raw_method("mx_graph_substitute"), &mx_graph_substitute);
+  mod.method(raw_method("mx_graph_substitute_vector"), &mx_graph_substitute_vector);
 
   mod.method(raw_method("sx_sym"), [](const std::string& name) { return SX::sym(name); });
   mod.method(raw_method("sx_sym"), [](const std::string& name, const std::int64_t rows, const std::int64_t cols) {

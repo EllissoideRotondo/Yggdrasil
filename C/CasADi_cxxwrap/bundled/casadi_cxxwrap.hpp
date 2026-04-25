@@ -3,19 +3,23 @@
 #include <casadi/casadi.hpp>
 
 #include <jlcxx/array.hpp>
+#include <jlcxx/functions.hpp>
 #include <jlcxx/jlcxx.hpp>
 #include <jlcxx/stl.hpp>
 
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace casadi_cxxwrap
 {
 using casadi::CodeGenerator;
+using casadi::Callback;
 using casadi::DM;
 using casadi::Dict;
 using casadi::Function;
@@ -80,6 +84,7 @@ void register_matrix_bindings(jlcxx::Module& mod);
 void register_generic_type_bindings(jlcxx::Module& mod);
 void register_sparsity_bindings(jlcxx::Module& mod);
 void register_function_bindings(jlcxx::Module& mod);
+void register_callback_bindings(jlcxx::Module& mod);
 void register_factory_bindings(jlcxx::Module& mod);
 void register_codegen_bindings(jlcxx::Module& mod);
 

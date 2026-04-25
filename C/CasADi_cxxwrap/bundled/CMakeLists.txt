@@ -49,6 +49,7 @@ if(NOT CASADI_TARGET)
 endif()
 
 set(CASADI_CXXWRAP_SOURCES
+  callback.cpp
   casadi_cxxwrap.cpp
   codegen.cpp
   common.cpp
