@@ -1,9 +1,14 @@
 #include "casadi_cxxwrap.hpp"
 
+#include <mutex>
+
 namespace casadi_cxxwrap
 {
 namespace
 {
+
+using DerivativeFunctionMap = std::map<casadi_int, Function>;
+using JacSparsityMap = std::map<std::pair<casadi_int, casadi_int>, Sparsity>;
 
 std::vector<std::string> callback_names(
   jlcxx::ArrayRef<std::string> names,
@@ -65,6 +70,53 @@ jl_value_t* call_julia_function(jl_value_t* function, jl_value_t* argument)
   return jl_call1(reinterpret_cast<JuliaFunctionPointer>(function), argument);
 }
 
+DerivativeFunctionMap derivative_function_map(
+  jlcxx::ArrayRef<std::int64_t> orders,
+  jlcxx::ArrayRef<Function> functions,
+  const char* name)
+{
+  if(orders.size() != functions.size())
+  {
+    throw std::invalid_argument(std::string(name) + " orders and functions must have the same length");
+  }
+
+  DerivativeFunctionMap out;
+  for(std::size_t i = 0; i != orders.size(); ++i)
+  {
+    const auto order = static_cast<casadi_int>(checked_nonnegative(orders[i], name));
+    const auto inserted = out.emplace(order, functions[i]);
+    if(!inserted.second)
+    {
+      throw std::invalid_argument(std::string(name) + " orders must be unique");
+    }
+  }
+  return out;
+}
+
+JacSparsityMap jac_sparsity_map(
+  jlcxx::ArrayRef<std::int64_t> output_indices,
+  jlcxx::ArrayRef<std::int64_t> input_indices,
+  jlcxx::ArrayRef<Sparsity> sparsities)
+{
+  if(output_indices.size() != input_indices.size() || output_indices.size() != sparsities.size())
+  {
+    throw std::invalid_argument("Jacobian sparsity output indices, input indices, and sparsities must have the same length");
+  }
+
+  JacSparsityMap out;
+  for(std::size_t i = 0; i != output_indices.size(); ++i)
+  {
+    const auto output_index = static_cast<casadi_int>(checked_index(output_indices[i], "output index"));
+    const auto input_index = static_cast<casadi_int>(checked_index(input_indices[i], "input index"));
+    const auto inserted = out.emplace(std::make_pair(output_index, input_index), sparsities[i]);
+    if(!inserted.second)
+    {
+      throw std::invalid_argument("Jacobian sparsity blocks must be unique");
+    }
+  }
+  return out;
+}
+
 class JuliaCallback final : public Callback
 {
 public:
@@ -76,14 +128,22 @@ public:
     std::vector<std::string> input_names,
     std::vector<std::string> output_names,
     const Dict& options,
-    Function jacobian = Function())
+    Function jacobian = Function(),
+    DerivativeFunctionMap forward_functions = DerivativeFunctionMap(),
+    DerivativeFunctionMap reverse_functions = DerivativeFunctionMap(),
+    JacSparsityMap jac_sparsities = JacSparsityMap(),
+    bool uses_output = false)
     : evaluator_(evaluator),
       input_sparsities_(std::move(input_sparsities)),
       output_sparsities_(std::move(output_sparsities)),
       input_names_(std::move(input_names)),
       output_names_(std::move(output_names)),
       jacobian_(std::move(jacobian)),
-      has_jacobian_(!jacobian_.is_null())
+      forward_functions_(std::move(forward_functions)),
+      reverse_functions_(std::move(reverse_functions)),
+      jac_sparsities_(std::move(jac_sparsities)),
+      has_jacobian_(!jacobian_.is_null()),
+      uses_output_(uses_output)
   {
     if(evaluator_ == nullptr)
     {
@@ -157,6 +217,11 @@ public:
     return output_names_.at(static_cast<std::size_t>(i));
   }
 
+  bool uses_output() const override
+  {
+    return uses_output_;
+  }
+
   bool has_jacobian() const override
   {
     return has_jacobian_;
@@ -171,6 +236,61 @@ public:
     return jacobian_;
   }
 
+  bool has_forward(const casadi_int nfwd) const override
+  {
+    return forward_functions_.find(nfwd) != forward_functions_.end();
+  }
+
+  Function get_forward(
+    const casadi_int nfwd,
+    const std::string&,
+    const std::vector<std::string>&,
+    const std::vector<std::string>&,
+    const Dict&) const override
+  {
+    const auto it = forward_functions_.find(nfwd);
+    if(it == forward_functions_.end())
+    {
+      throw std::out_of_range("Julia callback has no forward derivative for the requested order");
+    }
+    return it->second;
+  }
+
+  bool has_reverse(const casadi_int nadj) const override
+  {
+    return reverse_functions_.find(nadj) != reverse_functions_.end();
+  }
+
+  Function get_reverse(
+    const casadi_int nadj,
+    const std::string&,
+    const std::vector<std::string>&,
+    const std::vector<std::string>&,
+    const Dict&) const override
+  {
+    const auto it = reverse_functions_.find(nadj);
+    if(it == reverse_functions_.end())
+    {
+      throw std::out_of_range("Julia callback has no reverse derivative for the requested order");
+    }
+    return it->second;
+  }
+
+  bool has_jac_sparsity(const casadi_int oind, const casadi_int iind) const override
+  {
+    return jac_sparsities_.find(std::make_pair(oind, iind)) != jac_sparsities_.end();
+  }
+
+  Sparsity get_jac_sparsity(const casadi_int oind, const casadi_int iind, const bool) const override
+  {
+    const auto it = jac_sparsities_.find(std::make_pair(oind, iind));
+    if(it == jac_sparsities_.end())
+    {
+      throw std::out_of_range("Julia callback has no Jacobian sparsity for the requested block");
+    }
+    return it->second;
+  }
+
 private:
   jl_value_t* evaluator_;
   std::vector<Sparsity> input_sparsities_;
@@ -178,7 +298,11 @@ private:
   std::vector<std::string> input_names_;
   std::vector<std::string> output_names_;
   Function jacobian_;
+  DerivativeFunctionMap forward_functions_;
+  DerivativeFunctionMap reverse_functions_;
+  JacSparsityMap jac_sparsities_;
   bool has_jacobian_;
+  bool uses_output_;
 };
 
 std::vector<std::shared_ptr<JuliaCallback>>& callback_registry()
@@ -187,8 +311,15 @@ std::vector<std::shared_ptr<JuliaCallback>>& callback_registry()
   return registry;
 }
 
+std::mutex& callback_registry_mutex()
+{
+  static std::mutex mutex;
+  return mutex;
+}
+
 Function store_callback(const std::shared_ptr<JuliaCallback>& callback)
 {
+  std::lock_guard<std::mutex> lock(callback_registry_mutex());
   callback_registry().push_back(callback);
   const Function& function = *callback;
   return function;
@@ -236,11 +367,46 @@ Function make_callback_with_jacobian(
     jacobian));
 }
 
+Function make_callback_derivatives(
+  const std::string& name,
+  jl_value_t* evaluator,
+  jlcxx::ArrayRef<Sparsity> input_sparsities,
+  jlcxx::ArrayRef<Sparsity> output_sparsities,
+  jlcxx::ArrayRef<std::string> input_names,
+  jlcxx::ArrayRef<std::string> output_names,
+  const GenericType& options,
+  const Function& jacobian,
+  jlcxx::ArrayRef<std::int64_t> forward_orders,
+  jlcxx::ArrayRef<Function> forward_functions,
+  jlcxx::ArrayRef<std::int64_t> reverse_orders,
+  jlcxx::ArrayRef<Function> reverse_functions,
+  jlcxx::ArrayRef<std::int64_t> jac_sparsity_output_indices,
+  jlcxx::ArrayRef<std::int64_t> jac_sparsity_input_indices,
+  jlcxx::ArrayRef<Sparsity> jac_sparsities,
+  const bool uses_output)
+{
+  return store_callback(std::make_shared<JuliaCallback>(
+    name,
+    evaluator,
+    to_vector(input_sparsities),
+    to_vector(output_sparsities),
+    callback_names(input_names, input_sparsities.size(), "i"),
+    callback_names(output_names, output_sparsities.size(), "o"),
+    generic_as_dict(options, "Callback options"),
+    jacobian,
+    derivative_function_map(forward_orders, forward_functions, "forward"),
+    derivative_function_map(reverse_orders, reverse_functions, "reverse"),
+    jac_sparsity_map(jac_sparsity_output_indices, jac_sparsity_input_indices, jac_sparsities),
+    uses_output));
+}
+
 void register_callback_bindings(jlcxx::Module& mod)
 {
   mod.method(raw_method("callback"), &make_callback);
   mod.method(raw_method("callback_jacobian"), &make_callback_with_jacobian);
+  mod.method(raw_method("callback_derivatives"), &make_callback_derivatives);
   mod.method(raw_method("callback_registry_size"), []() {
+    std::lock_guard<std::mutex> lock(callback_registry_mutex());
     return static_cast<std::int64_t>(callback_registry().size());
   });
 }

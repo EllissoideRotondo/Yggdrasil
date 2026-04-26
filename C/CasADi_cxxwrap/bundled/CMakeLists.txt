@@ -50,12 +50,15 @@ endif()
 
 set(CASADI_CXXWRAP_SOURCES
   callback.cpp
+  builders.cpp
   casadi_cxxwrap.cpp
   codegen.cpp
   common.cpp
   factories.cpp
   functions.cpp
+  interpolant.cpp
   matrix.cpp
+  opti.cpp
   options.cpp
   sparsity.cpp
 )

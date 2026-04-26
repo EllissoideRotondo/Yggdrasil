@@ -13,6 +13,17 @@ void register_types(jlcxx::Module& mod)
   mod.add_type<Function>("CasadiFunction");
   mod.add_type<GenericType>("GenericType");
   mod.add_type<Importer>("Importer");
+  mod.add_type<Opti>("Opti")
+    .constructor<>()
+    .constructor<const std::string&>();
+  mod.add_type<OptiAdvanced>("OptiAdvanced");
+  mod.add_type<OptiSol>("OptiSol");
+  mod.add_type<DaeBuilder>("DaeBuilder")
+    .constructor<>()
+    .constructor<const std::string&>()
+    .constructor<const std::string&, const std::string&>();
+  mod.add_type<NlpBuilder>("NlpBuilder")
+    .constructor<>();
   mod.add_type<Sparsity>("Sparsity");
   mod.add_type<CodeGenerator>("CodeGenerator")
     .constructor<const std::string&>();
@@ -31,4 +42,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
   casadi_cxxwrap::register_sparsity_bindings(mod);
   casadi_cxxwrap::register_factory_bindings(mod);
   casadi_cxxwrap::register_codegen_bindings(mod);
+  casadi_cxxwrap::register_interpolant_bindings(mod);
+  casadi_cxxwrap::register_opti_bindings(mod);
+  casadi_cxxwrap::register_builder_bindings(mod);
 }

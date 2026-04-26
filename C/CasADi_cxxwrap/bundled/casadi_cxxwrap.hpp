@@ -21,12 +21,18 @@ namespace casadi_cxxwrap
 using casadi::CodeGenerator;
 using casadi::Callback;
 using casadi::DM;
+using casadi::DaeBuilder;
+using casadi::DMDict;
 using casadi::Dict;
 using casadi::Function;
 using casadi::GenericType;
 using casadi::Importer;
 using casadi::MX;
 using casadi::MXDict;
+using casadi::NlpBuilder;
+using casadi::Opti;
+using casadi::OptiAdvanced;
+using casadi::OptiSol;
 using casadi::Sparsity;
 using casadi::SpDict;
 using casadi::SX;
@@ -87,5 +93,8 @@ void register_function_bindings(jlcxx::Module& mod);
 void register_callback_bindings(jlcxx::Module& mod);
 void register_factory_bindings(jlcxx::Module& mod);
 void register_codegen_bindings(jlcxx::Module& mod);
+void register_interpolant_bindings(jlcxx::Module& mod);
+void register_opti_bindings(jlcxx::Module& mod);
+void register_builder_bindings(jlcxx::Module& mod);
 
 } // namespace casadi_cxxwrap
