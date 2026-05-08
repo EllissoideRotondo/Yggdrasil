@@ -18,6 +18,12 @@ void register_linsol_bindings(jlcxx::Module& mod)
   });
   mod.method(raw_method("linsol_sfact"), [](const casadi::Linsol& linsol, const DM& A) { linsol.sfact(A); });
   mod.method(raw_method("linsol_nfact"), [](const casadi::Linsol& linsol, const DM& A) { linsol.nfact(A); });
+  mod.method(raw_method("linsol_neig"), [](const casadi::Linsol& linsol, const DM& A) {
+    return static_cast<std::int64_t>(linsol.neig(A));
+  });
+  mod.method(raw_method("linsol_rank"), [](const casadi::Linsol& linsol, const DM& A) {
+    return static_cast<std::int64_t>(linsol.rank(A));
+  });
 
   mod.method(raw_method("has_linsol"), [](const std::string& plugin) { return casadi::has_linsol(plugin); });
   mod.method(raw_method("load_linsol"), [](const std::string& plugin) { casadi::load_linsol(plugin); });

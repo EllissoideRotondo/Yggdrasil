@@ -40,8 +40,7 @@ filter!(
 )
 
 dependencies = [
-    #BuildDependency(PackageSpec(; name="libjulia_jll", version="1.11.0")),
-    BuildDependency(PackageSpec(name="libjulia_jll")),
+    BuildDependency("libjulia_jll"),
     Dependency("CasADi_jll"; compat="~3.7.2"),
     Dependency("libcxxwrap_julia_jll"; compat="~0.14.5"),
     Dependency("CompilerSupportLibraries_jll"),

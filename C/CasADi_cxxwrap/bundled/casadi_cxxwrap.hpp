@@ -37,8 +37,116 @@ using casadi::OptiSol;
 using casadi::Sparsity;
 using casadi::SpDict;
 using casadi::Linsol;
+using casadi::FileDeserializer;
+using casadi::FileSerializer;
+using casadi::StringDeserializer;
+using casadi::StringSerializer;
 using casadi::SX;
 using casadi::SXDict;
+using casadi::XmlFile;
+using casadi::XmlNode;
+
+struct SXDictStatsResult
+{
+  SXDict value;
+  GenericType stats;
+};
+
+struct MXDictStatsResult
+{
+  MXDict value;
+  GenericType stats;
+};
+
+struct SXDictDaeMapResult
+{
+  SXDict value;
+  Function state_to_orig;
+  Function phi;
+};
+
+struct MXDictDaeMapResult
+{
+  MXDict value;
+  Function state_to_orig;
+  Function phi;
+};
+
+struct SXSimpleBoundsResult
+{
+  std::vector<std::int64_t> gi;
+  SX lbx;
+  SX ubx;
+  Function lam_forward;
+  Function lam_backward;
+};
+
+struct MXSimpleBoundsResult
+{
+  std::vector<std::int64_t> gi;
+  MX lbx;
+  MX ubx;
+  Function lam_forward;
+  Function lam_backward;
+};
+
+struct SparsityMappingResult
+{
+  Sparsity value;
+  std::vector<std::int64_t> mapping;
+};
+
+struct IntVectorPairResult
+{
+  std::vector<std::int64_t> first;
+  std::vector<std::int64_t> second;
+};
+
+struct SparsityLdlResult
+{
+  Sparsity lt;
+  std::vector<std::int64_t> permutation;
+};
+
+struct SparsityQrResult
+{
+  Sparsity v;
+  Sparsity r;
+  std::vector<std::int64_t> prinv;
+  std::vector<std::int64_t> pc;
+};
+
+struct SparsitySccResult
+{
+  std::int64_t components;
+  std::vector<std::int64_t> index;
+  std::vector<std::int64_t> offset;
+};
+
+struct SparsityBtfResult
+{
+  std::int64_t blocks;
+  std::vector<std::int64_t> rowperm;
+  std::vector<std::int64_t> colperm;
+  std::vector<std::int64_t> rowblock;
+  std::vector<std::int64_t> colblock;
+  std::vector<std::int64_t> coarse_rowblock;
+  std::vector<std::int64_t> coarse_colblock;
+};
+
+struct SXSharedResult
+{
+  std::vector<SX> expressions;
+  std::vector<SX> variables;
+  std::vector<SX> definitions;
+};
+
+struct MXSharedResult
+{
+  std::vector<MX> expressions;
+  std::vector<MX> variables;
+  std::vector<MX> definitions;
+};
 
 casadi_int checked_casadi_int(std::int64_t value, const char* name);
 casadi_int checked_nonnegative(std::int64_t value, const char* name);
@@ -102,5 +210,7 @@ void register_opti_bindings(jlcxx::Module& mod);
 void register_builder_bindings(jlcxx::Module& mod);
 void register_dm_dict_bindings(jlcxx::Module& mod);
 void register_linsol_bindings(jlcxx::Module& mod);
+void register_utility_bindings(jlcxx::Module& mod);
+void register_serialization_bindings(jlcxx::Module& mod);
 
 } // namespace casadi_cxxwrap

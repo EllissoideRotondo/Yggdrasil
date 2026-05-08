@@ -26,6 +26,9 @@ void register_codegen_bindings(jlcxx::Module& mod)
   mod.method(raw_method("codegen_dump"), [](CodeGenerator& generator) {
     return generator.dump();
   });
+  mod.method(raw_method("codegen_add_include"), [](CodeGenerator& generator, const std::string& include, const bool relative_path, const std::string& use_ifdef) {
+    generator.add_include(include, relative_path, use_ifdef);
+  });
 }
 
 } // namespace casadi_cxxwrap

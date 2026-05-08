@@ -62,7 +62,9 @@ set(CASADI_CXXWRAP_SOURCES
   matrix.cpp
   opti.cpp
   options.cpp
+  serialization.cpp
   sparsity.cpp
+  utilities.cpp
 )
 
 add_library(casadicxxwrap SHARED ${CASADI_CXXWRAP_SOURCES})

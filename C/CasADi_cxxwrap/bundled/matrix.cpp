@@ -153,6 +153,81 @@ std::vector<T> hessian_with_gradient(const T& expression, const T& variable)
 }
 
 template<typename T>
+std::vector<T> symbolic_linear_coeff(const T& expression, const T& variable, const bool check)
+{
+  T A;
+  T b;
+  linear_coeff(expression, variable, A, b, check);
+  return {A, b};
+}
+
+template<typename T>
+std::vector<T> symbolic_quadratic_coeff(const T& expression, const T& variable, const bool check)
+{
+  T A;
+  T b;
+  T c;
+  quadratic_coeff(expression, variable, A, b, c, check);
+  return {A, b, c};
+}
+
+template<typename T>
+T symbolic_taylor(const T& expression, const T& variable, const T& point, const std::int64_t order)
+{
+  return taylor(expression, variable, point, checked_nonnegative(order, "order"));
+}
+
+template<typename T>
+T symbolic_mtaylor(const T& expression, const T& variable, const T& point, const std::int64_t order)
+{
+  return mtaylor(expression, variable, point, checked_nonnegative(order, "order"));
+}
+
+template<typename T>
+T symbolic_mtaylor_weighted(
+  const T& expression,
+  const T& variable,
+  const T& point,
+  const std::int64_t order,
+  jlcxx::ArrayRef<std::int64_t> order_contributions)
+{
+  return mtaylor(
+    expression,
+    variable,
+    point,
+    checked_nonnegative(order, "order"),
+    to_casadi_int_vector(order_contributions));
+}
+
+SXSharedResult sx_shared(
+  jlcxx::ArrayRef<SX> expressions,
+  jlcxx::ArrayRef<SX> variables,
+  jlcxx::ArrayRef<SX> definitions,
+  const std::string& variable_prefix,
+  const std::string& variable_suffix)
+{
+  std::vector<SX> ex = to_vector(expressions);
+  std::vector<SX> v = to_vector(variables);
+  std::vector<SX> vdef = to_vector(definitions);
+  shared(ex, v, vdef, variable_prefix, variable_suffix);
+  return {ex, v, vdef};
+}
+
+MXSharedResult mx_shared(
+  jlcxx::ArrayRef<MX> expressions,
+  jlcxx::ArrayRef<MX> variables,
+  jlcxx::ArrayRef<MX> definitions,
+  const std::string& variable_prefix,
+  const std::string& variable_suffix)
+{
+  std::vector<MX> ex = to_vector(expressions);
+  std::vector<MX> v = to_vector(variables);
+  std::vector<MX> vdef = to_vector(definitions);
+  shared(ex, v, vdef, variable_prefix, variable_suffix);
+  return {ex, v, vdef};
+}
+
+template<typename T>
 std::vector<T> symbolic_variables(const T& expression)
 {
   return symvar(expression);
@@ -249,6 +324,19 @@ std::vector<MX> mx_graph_substitute_vector(
   jlcxx::ArrayRef<MX> replacements)
 {
   return graph_substitute(to_vector(expressions), to_vector(variables), to_vector(replacements));
+}
+
+MX mx_matrix_expand(const MX& expression, jlcxx::ArrayRef<MX> boundary, const GenericType& options)
+{
+  return matrix_expand(expression, to_vector(boundary), generic_as_dict(options, "matrix_expand options"));
+}
+
+std::vector<MX> mx_matrix_expand_vector(
+  jlcxx::ArrayRef<MX> expressions,
+  jlcxx::ArrayRef<MX> boundary,
+  const GenericType& options)
+{
+  return matrix_expand(to_vector(expressions), to_vector(boundary), generic_as_dict(options, "matrix_expand options"));
 }
 
 std::vector<double> dm_full(const DM& value)
@@ -442,6 +530,8 @@ void register_matrix_common(jlcxx::Module& mod, const std::string& prefix)
   mod.method(raw_method(prefix, "pinv_options"), [](const T& value, const std::string& lsolver, const GenericType& options) {
     return pinv(value, lsolver, generic_as_dict(options, "pinv options"));
   });
+  mod.method(raw_method(prefix, "expm"), [](const T& value) { return expm(value); });
+  mod.method(raw_method(prefix, "expm_const"), [](const T& value, const T& time) { return expm_const(value, time); });
   mod.method(raw_method(prefix, "solve"), [](const T& matrix, const T& rhs) { return solve(matrix, rhs); });
   mod.method(raw_method(prefix, "solve_options"), [](const T& matrix, const T& rhs, const std::string& lsolver, const GenericType& options) {
     return solve(matrix, rhs, lsolver, generic_as_dict(options, "solve options"));
@@ -541,6 +631,28 @@ void register_symbolic_utilities(jlcxx::Module& mod, const std::string& prefix)
   mod.method(raw_method(prefix, "jacobian_sparsity"), [](const T& expression, const T& variable) {
     return jacobian_sparsity(expression, variable);
   });
+  mod.method(raw_method(prefix, "is_linear"), [](const T& expression, const T& variable) {
+    return is_linear(expression, variable);
+  });
+  mod.method(raw_method(prefix, "is_quadratic"), [](const T& expression, const T& variable) {
+    return is_quadratic(expression, variable);
+  });
+  mod.method(raw_method(prefix, "linear_coeff"), &symbolic_linear_coeff<T>);
+  mod.method(raw_method(prefix, "quadratic_coeff"), &symbolic_quadratic_coeff<T>);
+  if constexpr(std::is_same_v<T, SX>)
+  {
+    mod.method(raw_method(prefix, "taylor"), &symbolic_taylor<T>);
+    mod.method(raw_method(prefix, "taylor_default"), [](const T& expression, const T& variable) {
+      return taylor(expression, variable);
+    });
+    mod.method(raw_method(prefix, "mtaylor"), &symbolic_mtaylor<T>);
+    mod.method(raw_method(prefix, "mtaylor_weighted"), &symbolic_mtaylor_weighted<T>);
+    mod.method(raw_method(prefix, "poly_coeff"), [](const T& expression, const T& variable) {
+      return poly_coeff(expression, variable);
+    });
+    mod.method(raw_method(prefix, "poly_roots"), [](const T& polynomial) { return poly_roots(polynomial); });
+    mod.method(raw_method(prefix, "eig_symbolic"), [](const T& matrix) { return eig_symbolic(matrix); });
+  }
 }
 
 void register_matrix_bindings(jlcxx::Module& mod)
@@ -557,6 +669,16 @@ void register_matrix_bindings(jlcxx::Module& mod)
 
   mod.method(raw_method("mx_graph_substitute"), &mx_graph_substitute);
   mod.method(raw_method("mx_graph_substitute_vector"), &mx_graph_substitute_vector);
+  mod.method(raw_method("mx_matrix_expand"), &mx_matrix_expand);
+  mod.method(raw_method("mx_matrix_expand_vector"), &mx_matrix_expand_vector);
+  mod.method(raw_method("sx_shared"), &sx_shared);
+  mod.method(raw_method("sx_shared_expressions"), [](const SXSharedResult& result) { return result.expressions; });
+  mod.method(raw_method("sx_shared_variables"), [](const SXSharedResult& result) { return result.variables; });
+  mod.method(raw_method("sx_shared_definitions"), [](const SXSharedResult& result) { return result.definitions; });
+  mod.method(raw_method("mx_shared"), &mx_shared);
+  mod.method(raw_method("mx_shared_expressions"), [](const MXSharedResult& result) { return result.expressions; });
+  mod.method(raw_method("mx_shared_variables"), [](const MXSharedResult& result) { return result.variables; });
+  mod.method(raw_method("mx_shared_definitions"), [](const MXSharedResult& result) { return result.definitions; });
 
   mod.method(raw_method("sx_sym"), [](const std::string& name) { return SX::sym(name); });
   mod.method(raw_method("sx_sym"), [](const std::string& name, const std::int64_t rows, const std::int64_t cols) {
