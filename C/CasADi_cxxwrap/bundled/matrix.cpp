@@ -81,6 +81,12 @@ T element_at(const T& value, const std::int64_t row, const std::int64_t col)
 }
 
 template<typename T>
+void set_element(T& value, const std::int64_t row, const std::int64_t col, const T& replacement)
+{
+  value(checked_index(row, "row"), checked_index(col, "col")) = replacement;
+}
+
+template<typename T>
 std::int64_t rows(const T& value)
 {
   return static_cast<std::int64_t>(value.size1());
@@ -392,6 +398,7 @@ void register_matrix_common(jlcxx::Module& mod, const std::string& prefix)
   mod.method(raw_method(prefix, "is_tril"), [](const T& value) { return value.is_tril(); });
   mod.method(raw_method(prefix, "is_triu"), [](const T& value) { return value.is_triu(); });
   mod.method(raw_method(prefix, "get"), &element_at<T>);
+  mod.method(raw_method(prefix, "set"), &set_element<T>);
   mod.method(raw_method(prefix, "sparsity"), [](const T& value) { return value.get_sparsity(); });
   mod.method(raw_method(prefix, "is_regular"), [](const T& value) { return value.is_regular(); });
   mod.method(raw_method(prefix, "is_symbolic"), [](const T& value) { return value.is_symbolic(); });

@@ -65,12 +65,6 @@ std::vector<DM> callback_result_to_vector(jl_value_t* value, const std::size_t e
     jlcxx::julia_type_name(reinterpret_cast<jl_value_t*>(jl_typeof(value))));
 }
 
-jl_value_t* call_julia_function(jl_value_t* function, jl_value_t* argument)
-{
-  using JuliaFunctionPointer = decltype(jl_get_function(jl_base_module, "identity"));
-  return jl_call1(reinterpret_cast<JuliaFunctionPointer>(function), argument);
-}
-
 DerivativeFunctionMap derivative_function_map(
   jlcxx::ArrayRef<std::int64_t> orders,
   jlcxx::ArrayRef<Function> functions,
@@ -180,7 +174,16 @@ public:
       throw std::runtime_error("Julia callback evaluation failed");
     }
 
-    std::vector<DM> out = callback_result_to_vector(result, output_sparsities_.size());
+    std::vector<DM> out;
+    try
+    {
+      out = callback_result_to_vector(result, output_sparsities_.size());
+    }
+    catch(...)
+    {
+      JL_GC_POP();
+      throw;
+    }
     JL_GC_POP();
     return out;
   }

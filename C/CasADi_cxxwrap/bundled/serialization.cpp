@@ -337,7 +337,7 @@ void register_serializer_methods(jlcxx::Module& mod, const std::string& prefix)
     mod.method(raw_method("string_serializer_pack_double_vector"), &serializer_pack_double_vector<Serializer>);
     mod.method(raw_method("string_serializer_pack_string_vector"), &serializer_pack_string_vector<Serializer>);
   }
-  else
+  else if(prefix == "file")
   {
     using Serializer = FileSerializer;
     mod.method(raw_method("file_serializer_pack_sparsity"), &serializer_pack_sparsity<Serializer>);
@@ -360,6 +360,10 @@ void register_serializer_methods(jlcxx::Module& mod, const std::string& prefix)
     mod.method(raw_method("file_serializer_pack_int_vector"), &serializer_pack_int_vector<Serializer>);
     mod.method(raw_method("file_serializer_pack_double_vector"), &serializer_pack_double_vector<Serializer>);
     mod.method(raw_method("file_serializer_pack_string_vector"), &serializer_pack_string_vector<Serializer>);
+  }
+  else
+  {
+    throw std::invalid_argument("unknown serializer prefix: " + prefix);
   }
 }
 

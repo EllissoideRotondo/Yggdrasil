@@ -33,15 +33,16 @@ products = [
 
 platforms = vcat(libjulia_platforms.(julia_versions)...)
 platforms = expand_cxxstring_abis(platforms)
+# riscv64: libcxxwrap_julia_jll has no riscv64 support
+# FreeBSD: CasADi_jll excludes FreeBSD (Bonmin_jll incompatibility)
 filter!(
-    p -> arch(p) != "riscv64" &&
-        !(arch(p) == "aarch64" && Sys.isfreebsd(p)),
+    p -> arch(p) != "riscv64" && !Sys.isfreebsd(p),
     platforms,
 )
 
 dependencies = [
     BuildDependency("libjulia_jll"),
-    Dependency("CasADi_jll"; compat="~3.7.2"),
+    Dependency("CasADi_jll"; compat="~3.7.3"),
     Dependency("libcxxwrap_julia_jll"; compat="~0.14.5"),
     Dependency("CompilerSupportLibraries_jll"),
 ]
@@ -55,6 +56,6 @@ build_tarballs(
     platforms,
     products,
     dependencies;
-    preferred_gcc_version = v"8",
+    preferred_gcc_version = v"9",
     julia_compat = libjulia_julia_compat(julia_versions),
 )

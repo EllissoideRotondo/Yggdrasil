@@ -23,7 +23,7 @@ std::vector<std::vector<double>> interpolant_grid(
 
     std::vector<double> current;
     current.reserve(static_cast<std::size_t>(length));
-    for(int i = 0; i != length; ++i)
+    for(casadi_int i = 0; i != length; ++i)
     {
       current.push_back(grid_values[offset++]);
     }

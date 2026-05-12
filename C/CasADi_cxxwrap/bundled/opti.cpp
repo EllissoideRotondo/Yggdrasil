@@ -27,12 +27,6 @@ DMDict opti_dm_dict(jlcxx::ArrayRef<std::string> keys, jlcxx::ArrayRef<DM> value
   return DMDict(named_dict(keys, values, name));
 }
 
-jl_value_t* call_julia_function(jl_value_t* function, jl_value_t* argument)
-{
-  using JuliaFunctionPointer = decltype(jl_get_function(jl_base_module, "identity"));
-  return jl_call1(reinterpret_cast<JuliaFunctionPointer>(function), argument);
-}
-
 class JuliaOptiCallback final : public OptiCallback
 {
 public:

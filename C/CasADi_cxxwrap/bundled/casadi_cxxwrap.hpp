@@ -182,6 +182,12 @@ std::string to_string(const T& value)
 Dict make_codegen_options(bool with_header, bool main, bool mex, bool cpp);
 const Dict& generic_as_dict(const GenericType& value, const char* name);
 
+inline jl_value_t* call_julia_function(jl_value_t* function, jl_value_t* argument)
+{
+  using JuliaFunctionPointer = decltype(jl_get_function(jl_base_module, "identity"));
+  return jl_call1(reinterpret_cast<JuliaFunctionPointer>(function), argument);
+}
+
 template<typename T>
 std::map<std::string, T> named_dict(jlcxx::ArrayRef<std::string> keys, jlcxx::ArrayRef<T> values, const char* name)
 {
