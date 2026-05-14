@@ -40,16 +40,31 @@ std::vector<DM> callback_result_to_vector(jl_value_t* value, const std::size_t e
   std::vector<DM> out;
   if(jl_is_array(value))
   {
-    jlcxx::ArrayRef<DM> values(reinterpret_cast<jl_array_t*>(value));
-    if(values.size() != expected)
+    jl_array_t* const array = reinterpret_cast<jl_array_t*>(value);
+    const std::size_t size = jl_array_len(array);
+    if(size != expected)
     {
       throw std::runtime_error("Julia callback returned the wrong number of outputs");
     }
 
-    out.reserve(values.size());
-    for(std::size_t i = 0; i != values.size(); ++i)
+    jl_value_t* const element_type = reinterpret_cast<jl_value_t*>(jl_array_eltype(value));
+    jl_value_t* const dm_type = reinterpret_cast<jl_value_t*>(jlcxx::julia_base_type<DM>());
+    if(element_type != dm_type)
     {
-      out.push_back(values[i]);
+      throw std::runtime_error(
+        "Julia callback must return Vector{DM}, got " +
+        jlcxx::julia_type_name(reinterpret_cast<jl_value_t*>(jl_typeof(value))));
+    }
+
+    out.reserve(size);
+    for(std::size_t i = 0; i != size; ++i)
+    {
+      jl_value_t* element = jl_array_ptr_ref(array, i);
+      if(element == nullptr)
+      {
+        throw std::runtime_error("Julia callback returned a Vector with a null element");
+      }
+      out.push_back(jlcxx::unbox<DM>(element));
     }
     return out;
   }
@@ -146,7 +161,15 @@ public:
     }
 
     jlcxx::protect_from_gc(evaluator_);
-    construct(name, options);
+    try
+    {
+      construct(name, options);
+    }
+    catch(...)
+    {
+      jlcxx::unprotect_from_gc(evaluator_);
+      throw;
+    }
   }
 
   ~JuliaCallback() override
@@ -448,6 +471,8 @@ void register_callback_bindings(jlcxx::Module& mod)
     return static_cast<std::int64_t>(callback_registry().size());
   });
   mod.method(raw_method("callback_release_function_if_unused"), [](const Function& function) {
+    // max_count=2: the registry holds one CasADi reference, the caller holds one.
+    // A getCount() of at most 2 means no other user holds the function.
     return release_callback_function_if_unused(function, 2);
   });
   mod.method(raw_method("callback_sweep_unused"), []() {

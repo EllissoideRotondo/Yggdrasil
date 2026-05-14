@@ -43,7 +43,7 @@ filter!(
 dependencies = [
     BuildDependency("libjulia_jll"),
     Dependency("CasADi_jll"; compat="~3.7.3"),
-    Dependency("libcxxwrap_julia_jll"; compat="~0.14.5"),
+    Dependency("libcxxwrap_julia_jll"; compat="~0.14.8"),
     Dependency("CompilerSupportLibraries_jll"),
 ]
 
