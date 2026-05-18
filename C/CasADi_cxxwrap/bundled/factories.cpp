@@ -234,11 +234,11 @@ void register_factory_bindings(jlcxx::Module& mod)
   mod.method(raw_method("nlpsol_function"), &nlpsol_function);
   mod.method(raw_method("nlpsol_in"), []() { return casadi::nlpsol_in(); });
   mod.method(raw_method("nlpsol_out"), []() { return casadi::nlpsol_out(); });
-  mod.method(raw_method("nlpsol_in_index"), [](const std::int64_t index) { return casadi::nlpsol_in(checked_index(index, "index")); });
-  mod.method(raw_method("nlpsol_out_index"), [](const std::int64_t index) { return casadi::nlpsol_out(checked_index(index, "index")); });
+  mod.method(raw_method("nlpsol_in_index"), [](const std::int64_t index) { return casadi::nlpsol_in(checked_nonnegative(index, "index")); });
+  mod.method(raw_method("nlpsol_out_index"), [](const std::int64_t index) { return casadi::nlpsol_out(checked_nonnegative(index, "index")); });
   mod.method(raw_method("nlpsol_n_in"), []() { return static_cast<std::int64_t>(casadi::nlpsol_n_in()); });
   mod.method(raw_method("nlpsol_n_out"), []() { return static_cast<std::int64_t>(casadi::nlpsol_n_out()); });
-  mod.method(raw_method("nlpsol_default_in"), [](const std::int64_t index) { return casadi::nlpsol_default_in(checked_index(index, "index")); });
+  mod.method(raw_method("nlpsol_default_in"), [](const std::int64_t index) { return casadi::nlpsol_default_in(checked_nonnegative(index, "index")); });
   mod.method(raw_method("nlpsol_default_in_all"), []() { return casadi::nlpsol_default_in(); });
   mod.method(raw_method("nlpsol_options"), [](const std::string& plugin) { return casadi::nlpsol_options(plugin); });
   mod.method(raw_method("nlpsol_option_type"), [](const std::string& plugin, const std::string& option) { return casadi::nlpsol_option_type(plugin, option); });
@@ -253,8 +253,8 @@ void register_factory_bindings(jlcxx::Module& mod)
   mod.method(raw_method("conic_sparsity"), &conic_sp);
   mod.method(raw_method("conic_in"), []() { return casadi::conic_in(); });
   mod.method(raw_method("conic_out"), []() { return casadi::conic_out(); });
-  mod.method(raw_method("conic_in_index"), [](const std::int64_t index) { return casadi::conic_in(checked_index(index, "index")); });
-  mod.method(raw_method("conic_out_index"), [](const std::int64_t index) { return casadi::conic_out(checked_index(index, "index")); });
+  mod.method(raw_method("conic_in_index"), [](const std::int64_t index) { return casadi::conic_in(checked_nonnegative(index, "index")); });
+  mod.method(raw_method("conic_out_index"), [](const std::int64_t index) { return casadi::conic_out(checked_nonnegative(index, "index")); });
   mod.method(raw_method("conic_n_in"), []() { return static_cast<std::int64_t>(casadi::conic_n_in()); });
   mod.method(raw_method("conic_n_out"), []() { return static_cast<std::int64_t>(casadi::conic_n_out()); });
   mod.method(raw_method("conic_options"), [](const std::string& plugin) { return casadi::conic_options(plugin); });
@@ -273,8 +273,8 @@ void register_factory_bindings(jlcxx::Module& mod)
   mod.method(raw_method("rootfinder_function"), &rootfinder_function);
   mod.method(raw_method("rootfinder_in"), []() { return casadi::rootfinder_in(); });
   mod.method(raw_method("rootfinder_out"), []() { return casadi::rootfinder_out(); });
-  mod.method(raw_method("rootfinder_in_index"), [](const std::int64_t index) { return casadi::rootfinder_in(checked_index(index, "index")); });
-  mod.method(raw_method("rootfinder_out_index"), [](const std::int64_t index) { return casadi::rootfinder_out(checked_index(index, "index")); });
+  mod.method(raw_method("rootfinder_in_index"), [](const std::int64_t index) { return casadi::rootfinder_in(checked_nonnegative(index, "index")); });
+  mod.method(raw_method("rootfinder_out_index"), [](const std::int64_t index) { return casadi::rootfinder_out(checked_nonnegative(index, "index")); });
   mod.method(raw_method("rootfinder_n_in"), []() { return static_cast<std::int64_t>(casadi::rootfinder_n_in()); });
   mod.method(raw_method("rootfinder_n_out"), []() { return static_cast<std::int64_t>(casadi::rootfinder_n_out()); });
   mod.method(raw_method("rootfinder_options"), [](const std::string& plugin) { return casadi::rootfinder_options(plugin); });
@@ -295,14 +295,14 @@ void register_factory_bindings(jlcxx::Module& mod)
   mod.method(raw_method("integrator_function_tout"), &integrator_function_tout);
   mod.method(raw_method("integrator_in"), []() { return casadi::integrator_in(); });
   mod.method(raw_method("integrator_out"), []() { return casadi::integrator_out(); });
-  mod.method(raw_method("integrator_in_index"), [](const std::int64_t index) { return casadi::integrator_in(checked_index(index, "index")); });
-  mod.method(raw_method("integrator_out_index"), [](const std::int64_t index) { return casadi::integrator_out(checked_index(index, "index")); });
+  mod.method(raw_method("integrator_in_index"), [](const std::int64_t index) { return casadi::integrator_in(checked_nonnegative(index, "index")); });
+  mod.method(raw_method("integrator_out_index"), [](const std::int64_t index) { return casadi::integrator_out(checked_nonnegative(index, "index")); });
   mod.method(raw_method("integrator_n_in"), []() { return static_cast<std::int64_t>(casadi::integrator_n_in()); });
   mod.method(raw_method("integrator_n_out"), []() { return static_cast<std::int64_t>(casadi::integrator_n_out()); });
   mod.method(raw_method("dyn_in"), []() { return casadi::dyn_in(); });
   mod.method(raw_method("dyn_out"), []() { return casadi::dyn_out(); });
-  mod.method(raw_method("dyn_in_index"), [](const std::int64_t index) { return casadi::dyn_in(checked_index(index, "index")); });
-  mod.method(raw_method("dyn_out_index"), [](const std::int64_t index) { return casadi::dyn_out(checked_index(index, "index")); });
+  mod.method(raw_method("dyn_in_index"), [](const std::int64_t index) { return casadi::dyn_in(checked_nonnegative(index, "index")); });
+  mod.method(raw_method("dyn_out_index"), [](const std::int64_t index) { return casadi::dyn_out(checked_nonnegative(index, "index")); });
   mod.method(raw_method("dyn_n_in"), []() { return static_cast<std::int64_t>(casadi::dyn_n_in()); });
   mod.method(raw_method("dyn_n_out"), []() { return static_cast<std::int64_t>(casadi::dyn_n_out()); });
   mod.method(raw_method("event_in"), []() { return casadi::event_in(); });
@@ -314,8 +314,8 @@ void register_factory_bindings(jlcxx::Module& mod)
   mod.method(raw_method("expmsol"), [](const std::string& name, const std::string& solver, const Sparsity& A, const GenericType& options) {
     return casadi::expmsol(name, solver, A, generic_as_dict(options, "expmsol options"));
   });
-  mod.method(raw_method("expmsol_n_in"), []() { return casadi::expm_n_in(); });
-  mod.method(raw_method("expmsol_n_out"), []() { return casadi::expm_n_out(); });
+  mod.method(raw_method("expmsol_n_in"), []() { return static_cast<std::int64_t>(casadi::expm_n_in()); });
+  mod.method(raw_method("expmsol_n_out"), []() { return static_cast<std::int64_t>(casadi::expm_n_out()); });
   mod.method(raw_method("has_expm"), [](const std::string& plugin) { return casadi::has_expm(plugin); });
   mod.method(raw_method("load_expm"), [](const std::string& plugin) { casadi::load_expm(plugin); });
   mod.method(raw_method("doc_expm"), [](const std::string& plugin) { return casadi::doc_expm(plugin); });
@@ -334,8 +334,8 @@ void register_factory_bindings(jlcxx::Module& mod)
   });
   mod.method(raw_method("dple_in"), []() { return casadi::dple_in(); });
   mod.method(raw_method("dple_out"), []() { return casadi::dple_out(); });
-  mod.method(raw_method("dple_in_index"), [](const std::int64_t index) { return casadi::dple_in(checked_index(index, "index")); });
-  mod.method(raw_method("dple_out_index"), [](const std::int64_t index) { return casadi::dple_out(checked_index(index, "index")); });
+  mod.method(raw_method("dple_in_index"), [](const std::int64_t index) { return casadi::dple_in(checked_nonnegative(index, "index")); });
+  mod.method(raw_method("dple_out_index"), [](const std::int64_t index) { return casadi::dple_out(checked_nonnegative(index, "index")); });
   mod.method(raw_method("dple_n_in"), []() { return static_cast<std::int64_t>(casadi::dple_n_in()); });
   mod.method(raw_method("dple_n_out"), []() { return static_cast<std::int64_t>(casadi::dple_n_out()); });
   mod.method(raw_method("has_dple"), [](const std::string& plugin) { return casadi::has_dple(plugin); });

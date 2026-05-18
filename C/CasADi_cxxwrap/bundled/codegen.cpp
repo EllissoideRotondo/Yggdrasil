@@ -14,7 +14,7 @@ void register_codegen_bindings(jlcxx::Module& mod)
   mod.method(raw_method("codegen_add"), [](CodeGenerator& generator, const Function& f) {
     generator.add(f);
   });
-  mod.method(raw_method("codegen_add"), [](CodeGenerator& generator, const Function& f, const bool with_jac_sparsity) {
+  mod.method(raw_method("codegen_add_with_sparsity"), [](CodeGenerator& generator, const Function& f, const bool with_jac_sparsity) {
     generator.add(f, with_jac_sparsity);
   });
   mod.method(raw_method("codegen_generate"), [](CodeGenerator& generator) {

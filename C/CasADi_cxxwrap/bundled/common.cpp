@@ -19,6 +19,27 @@ casadi_int checked_casadi_int(const std::int64_t value, const char* name)
   return static_cast<casadi_int>(value);
 }
 
+casadi_int checked_casadi_int_size(const std::size_t value, const char* name)
+{
+  if constexpr(std::numeric_limits<casadi_int>::digits < std::numeric_limits<std::size_t>::digits)
+  {
+    if(value > static_cast<std::size_t>(std::numeric_limits<casadi_int>::max()))
+    {
+      throw std::out_of_range(std::string(name) + " is outside the casadi_int range");
+    }
+  }
+  return static_cast<casadi_int>(value);
+}
+
+std::int64_t checked_int64_size(const std::size_t value, const char* name)
+{
+  if(value > static_cast<std::size_t>(std::numeric_limits<std::int64_t>::max()))
+  {
+    throw std::out_of_range(std::string(name) + " is outside the Int64 range");
+  }
+  return static_cast<std::int64_t>(value);
+}
+
 casadi_int checked_nonnegative(const std::int64_t value, const char* name)
 {
   const auto converted = checked_casadi_int(value, name);
@@ -35,16 +56,6 @@ casadi_int checked_positive(const std::int64_t value, const char* name)
   if(converted <= 0)
   {
     throw std::out_of_range(std::string(name) + " must be positive");
-  }
-  return converted;
-}
-
-casadi_int checked_index(const std::int64_t value, const char* name)
-{
-  const auto converted = checked_casadi_int(value, name);
-  if(converted < 0)
-  {
-    throw std::out_of_range(std::string(name) + " must be non-negative");
   }
   return converted;
 }

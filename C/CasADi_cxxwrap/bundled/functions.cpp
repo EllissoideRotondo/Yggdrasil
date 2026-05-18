@@ -361,14 +361,38 @@ Function function_load(const std::string& filename)
   return Function::load(filename);
 }
 
+DMDict function_call_dm_dict(
+  const Function& f,
+  jlcxx::ArrayRef<std::string> keys,
+  jlcxx::ArrayRef<DM> values)
+{
+  return f(DMDict(named_dict(keys, values, "Function DM input dictionary")));
+}
+
+SXDict function_call_sx_dict(
+  const Function& f,
+  jlcxx::ArrayRef<std::string> keys,
+  jlcxx::ArrayRef<SX> values)
+{
+  return f(SXDict(named_dict(keys, values, "Function SX input dictionary")));
+}
+
+MXDict function_call_mx_dict(
+  const Function& f,
+  jlcxx::ArrayRef<std::string> keys,
+  jlcxx::ArrayRef<MX> values)
+{
+  return f(MXDict(named_dict(keys, values, "Function MX input dictionary")));
+}
+
 std::vector<std::int64_t> function_instruction_input(const Function& f, const std::int64_t index)
 {
-  return from_casadi_int_vector(f.instruction_input(checked_index(index, "index")));
+  return from_casadi_int_vector(f.instruction_input(checked_nonnegative(index, "index")));
 }
 
 std::vector<std::int64_t> function_instruction_output(const Function& f, const std::int64_t index)
 {
-  return from_casadi_int_vector(f.instruction_output(checked_index(index, "index")));
+  return from_casadi_int_vector(f.instruction_output(checked_nonnegative(index, "index")));
 }
 
 std::vector<std::int64_t> function_work_sizes(const Function& f)
@@ -379,10 +403,10 @@ std::vector<std::int64_t> function_work_sizes(const Function& f)
   size_t sz_w = 0;
   f.sz_work(sz_arg, sz_res, sz_iw, sz_w);
   return {
-    static_cast<std::int64_t>(sz_arg),
-    static_cast<std::int64_t>(sz_res),
-    static_cast<std::int64_t>(sz_iw),
-    static_cast<std::int64_t>(sz_w)};
+    checked_int64_size(sz_arg, "sz_arg"),
+    checked_int64_size(sz_res, "sz_res"),
+    checked_int64_size(sz_iw, "sz_iw"),
+    checked_int64_size(sz_w, "sz_w")};
 }
 
 Importer importer_new(const std::string& name, const std::string& compiler, const GenericType& options)
@@ -426,10 +450,10 @@ void register_function_bindings(jlcxx::Module& mod)
   mod.method(raw_method("function_name_in_all"), [](const Function& f) { return f.name_in(); });
   mod.method(raw_method("function_name_out_all"), [](const Function& f) { return f.name_out(); });
   mod.method(raw_method("function_name_in"), [](const Function& f, const std::int64_t index) {
-    return f.name_in(checked_index(index, "index"));
+    return f.name_in(checked_nonnegative(index, "index"));
   });
   mod.method(raw_method("function_name_out"), [](const Function& f, const std::int64_t index) {
-    return f.name_out(checked_index(index, "index"));
+    return f.name_out(checked_nonnegative(index, "index"));
   });
   mod.method(raw_method("function_index_in"), [](const Function& f, const std::string& name) {
     return static_cast<std::int64_t>(f.index_in(name));
@@ -444,75 +468,75 @@ void register_function_bindings(jlcxx::Module& mod)
     return f.has_out(name);
   });
   mod.method(raw_method("function_size_in"), [](const Function& f, const std::int64_t index) {
-    return function_size_pair(f.size_in(checked_index(index, "index")));
+    return function_size_pair(f.size_in(checked_nonnegative(index, "index")));
   });
   mod.method(raw_method("function_size_out"), [](const Function& f, const std::int64_t index) {
-    return function_size_pair(f.size_out(checked_index(index, "index")));
+    return function_size_pair(f.size_out(checked_nonnegative(index, "index")));
   });
   mod.method(raw_method("function_size1_in"), [](const Function& f, const std::int64_t index) {
-    return static_cast<std::int64_t>(f.size1_in(checked_index(index, "index")));
+    return static_cast<std::int64_t>(f.size1_in(checked_nonnegative(index, "index")));
   });
   mod.method(raw_method("function_size2_in"), [](const Function& f, const std::int64_t index) {
-    return static_cast<std::int64_t>(f.size2_in(checked_index(index, "index")));
+    return static_cast<std::int64_t>(f.size2_in(checked_nonnegative(index, "index")));
   });
   mod.method(raw_method("function_size1_out"), [](const Function& f, const std::int64_t index) {
-    return static_cast<std::int64_t>(f.size1_out(checked_index(index, "index")));
+    return static_cast<std::int64_t>(f.size1_out(checked_nonnegative(index, "index")));
   });
   mod.method(raw_method("function_size2_out"), [](const Function& f, const std::int64_t index) {
-    return static_cast<std::int64_t>(f.size2_out(checked_index(index, "index")));
+    return static_cast<std::int64_t>(f.size2_out(checked_nonnegative(index, "index")));
   });
   mod.method(raw_method("function_nnz_in"), [](const Function& f, const std::int64_t index) {
-    return static_cast<std::int64_t>(f.nnz_in(checked_index(index, "index")));
+    return static_cast<std::int64_t>(f.nnz_in(checked_nonnegative(index, "index")));
   });
   mod.method(raw_method("function_nnz_in_total"), [](const Function& f) {
     return static_cast<std::int64_t>(f.nnz_in());
   });
   mod.method(raw_method("function_nnz_out"), [](const Function& f, const std::int64_t index) {
-    return static_cast<std::int64_t>(f.nnz_out(checked_index(index, "index")));
+    return static_cast<std::int64_t>(f.nnz_out(checked_nonnegative(index, "index")));
   });
   mod.method(raw_method("function_nnz_out_total"), [](const Function& f) {
     return static_cast<std::int64_t>(f.nnz_out());
   });
   mod.method(raw_method("function_numel_in"), [](const Function& f, const std::int64_t index) {
-    return static_cast<std::int64_t>(f.numel_in(checked_index(index, "index")));
+    return static_cast<std::int64_t>(f.numel_in(checked_nonnegative(index, "index")));
   });
   mod.method(raw_method("function_numel_in_total"), [](const Function& f) {
     return static_cast<std::int64_t>(f.numel_in());
   });
   mod.method(raw_method("function_numel_out"), [](const Function& f, const std::int64_t index) {
-    return static_cast<std::int64_t>(f.numel_out(checked_index(index, "index")));
+    return static_cast<std::int64_t>(f.numel_out(checked_nonnegative(index, "index")));
   });
   mod.method(raw_method("function_numel_out_total"), [](const Function& f) {
     return static_cast<std::int64_t>(f.numel_out());
   });
   mod.method(raw_method("function_default_in"), [](const Function& f, const std::int64_t index) {
-    return f.default_in(checked_index(index, "index"));
+    return f.default_in(checked_nonnegative(index, "index"));
   });
   mod.method(raw_method("function_min_in"), [](const Function& f, const std::int64_t index) {
-    return f.min_in(checked_index(index, "index"));
+    return f.min_in(checked_nonnegative(index, "index"));
   });
   mod.method(raw_method("function_max_in"), [](const Function& f, const std::int64_t index) {
-    return f.max_in(checked_index(index, "index"));
+    return f.max_in(checked_nonnegative(index, "index"));
   });
   mod.method(raw_method("function_nominal_in"), [](const Function& f, const std::int64_t index) {
-    return f.nominal_in(checked_index(index, "index"));
+    return f.nominal_in(checked_nonnegative(index, "index"));
   });
   mod.method(raw_method("function_nominal_out"), [](const Function& f, const std::int64_t index) {
-    return f.nominal_out(checked_index(index, "index"));
+    return f.nominal_out(checked_nonnegative(index, "index"));
   });
   mod.method(raw_method("function_is_diff_in"), [](const Function& f, const std::int64_t index) {
-    return f.is_diff_in(checked_index(index, "index"));
+    return f.is_diff_in(checked_nonnegative(index, "index"));
   });
   mod.method(raw_method("function_is_diff_out"), [](const Function& f, const std::int64_t index) {
-    return f.is_diff_out(checked_index(index, "index"));
+    return f.is_diff_out(checked_nonnegative(index, "index"));
   });
   mod.method(raw_method("function_is_diff_in_all"), [](const Function& f) { return f.is_diff_in(); });
   mod.method(raw_method("function_is_diff_out_all"), [](const Function& f) { return f.is_diff_out(); });
   mod.method(raw_method("function_sparsity_in"), [](const Function& f, const std::int64_t index) {
-    return Sparsity(f.sparsity_in(checked_index(index, "index")));
+    return Sparsity(f.sparsity_in(checked_nonnegative(index, "index")));
   });
   mod.method(raw_method("function_sparsity_out"), [](const Function& f, const std::int64_t index) {
-    return Sparsity(f.sparsity_out(checked_index(index, "index")));
+    return Sparsity(f.sparsity_out(checked_nonnegative(index, "index")));
   });
   mod.method(raw_method("function_has_option"), [](const Function& f, const std::string& name) {
     return f.has_option(name);
@@ -546,6 +570,9 @@ void register_function_bindings(jlcxx::Module& mod)
   mod.method(raw_method("function_call_mx"), [](const Function& f, jlcxx::ArrayRef<MX> args) {
     return f(to_vector(args));
   });
+  mod.method(raw_method("function_call_dm_dict"), &function_call_dm_dict);
+  mod.method(raw_method("function_call_sx_dict"), &function_call_sx_dict);
+  mod.method(raw_method("function_call_mx_dict"), &function_call_mx_dict);
   mod.method(raw_method("function_jacobian"), [](const Function& f) { return f.jacobian(); });
   mod.method(raw_method("function_forward"), [](const Function& f, const std::int64_t nfwd) {
     return f.forward(checked_nonnegative(nfwd, "nfwd"));
@@ -558,8 +585,8 @@ void register_function_bindings(jlcxx::Module& mod)
   });
   mod.method(raw_method("function_jac_sparsity_block"), [](const Function& f, const std::int64_t output_index, const std::int64_t input_index, const bool compact) {
     return f.jac_sparsity(
-      checked_index(output_index, "output index"),
-      checked_index(input_index, "input index"),
+      checked_nonnegative(output_index, "output index"),
+      checked_nonnegative(input_index, "input index"),
       compact);
   });
   mod.method(raw_method("function_expand"), [](const Function& f) { return f.expand(); });
@@ -578,7 +605,7 @@ void register_function_bindings(jlcxx::Module& mod)
   mod.method(raw_method("function_generate_string"), [](const Function& f, const GenericType& options) {
     return f.generate(generic_as_dict(options, "generate options"));
   });
-  mod.method(raw_method("function_generate"), [](const Function& f, const std::string& filename, const bool with_header, const bool main, const bool mex, const bool cpp) {
+  mod.method(raw_method("function_generate_flags"), [](const Function& f, const std::string& filename, const bool with_header, const bool main, const bool mex, const bool cpp) {
     return f.generate(filename, make_codegen_options(with_header, main, mex, cpp));
   });
   mod.method(raw_method("function_generate_options"), [](const Function& f, const std::string& filename, const GenericType& options) {
@@ -620,7 +647,6 @@ void register_function_bindings(jlcxx::Module& mod)
   mod.method(raw_method("function_jit"), &function_jit);
   mod.method(raw_method("function_jit_sparsity"), &function_jit_sparsity);
   mod.method(raw_method("function_which_depends"), &function_which_depends);
-  mod.method(raw_method("function_which_depends_many"), &function_which_depends);
   mod.method(raw_method("function_which_depends_one"), &function_which_depends_one);
   mod.method(raw_method("function_stats"), [](const Function& f, const std::int64_t mem) {
     return GenericType(f.stats(checked_nonnegative(mem, "mem")));
@@ -635,19 +661,19 @@ void register_function_bindings(jlcxx::Module& mod)
   mod.method(raw_method("function_deserialize"), &function_deserialize);
   mod.method(raw_method("function_load"), &function_load);
   mod.method(raw_method("function_sx_in"), [](const Function& f, const std::int64_t index) {
-    return f.sx_in(checked_index(index, "index"));
+    return f.sx_in(checked_nonnegative(index, "index"));
   });
   mod.method(raw_method("function_sx_in_all"), [](const Function& f) { return f.sx_in(); });
   mod.method(raw_method("function_mx_in"), [](const Function& f, const std::int64_t index) {
-    return f.mx_in(checked_index(index, "index"));
+    return f.mx_in(checked_nonnegative(index, "index"));
   });
   mod.method(raw_method("function_mx_in_all"), [](const Function& f) { return f.mx_in(); });
   mod.method(raw_method("function_sx_out"), [](const Function& f, const std::int64_t index) {
-    return f.sx_out(checked_index(index, "index"));
+    return f.sx_out(checked_nonnegative(index, "index"));
   });
   mod.method(raw_method("function_sx_out_all"), [](const Function& f) { return f.sx_out(); });
   mod.method(raw_method("function_mx_out"), [](const Function& f, const std::int64_t index) {
-    return f.mx_out(checked_index(index, "index"));
+    return f.mx_out(checked_nonnegative(index, "index"));
   });
   mod.method(raw_method("function_mx_out_all"), [](const Function& f) { return f.mx_out(); });
   mod.method(raw_method("function_nz_from_in"), [](const Function& f, jlcxx::ArrayRef<DM> args) {
@@ -673,15 +699,15 @@ void register_function_bindings(jlcxx::Module& mod)
     return static_cast<std::int64_t>(f.n_instructions());
   });
   mod.method(raw_method("function_instruction_id"), [](const Function& f, const std::int64_t index) {
-    return static_cast<std::int64_t>(f.instruction_id(checked_index(index, "index")));
+    return static_cast<std::int64_t>(f.instruction_id(checked_nonnegative(index, "index")));
   });
   mod.method(raw_method("function_instruction_input"), &function_instruction_input);
   mod.method(raw_method("function_instruction_output"), &function_instruction_output);
   mod.method(raw_method("function_instruction_constant"), [](const Function& f, const std::int64_t index) {
-    return f.instruction_constant(checked_index(index, "index"));
+    return f.instruction_constant(checked_nonnegative(index, "index"));
   });
   mod.method(raw_method("function_instruction_mx"), [](const Function& f, const std::int64_t index) {
-    return f.instruction_MX(checked_index(index, "index"));
+    return f.instruction_MX(checked_nonnegative(index, "index"));
   });
   mod.method(raw_method("function_instructions_sx"), [](const Function& f) { return f.instructions_sx(); });
   mod.method(raw_method("function_has_spfwd"), [](const Function& f) { return f.has_spfwd(); });
@@ -708,14 +734,14 @@ void register_function_bindings(jlcxx::Module& mod)
     return f.find_function(name, checked_casadi_int(max_depth, "max_depth"));
   });
   mod.method(raw_method("function_assert_size_in"), [](const Function& f, const std::int64_t index, const std::int64_t rows, const std::int64_t cols) {
-    f.assert_size_in(checked_index(index, "index"), checked_nonnegative(rows, "rows"), checked_nonnegative(cols, "cols"));
+    f.assert_size_in(checked_nonnegative(index, "index"), checked_nonnegative(rows, "rows"), checked_nonnegative(cols, "cols"));
   });
   mod.method(raw_method("function_assert_size_out"), [](const Function& f, const std::int64_t index, const std::int64_t rows, const std::int64_t cols) {
-    f.assert_size_out(checked_index(index, "index"), checked_nonnegative(rows, "rows"), checked_nonnegative(cols, "cols"));
+    f.assert_size_out(checked_nonnegative(index, "index"), checked_nonnegative(rows, "rows"), checked_nonnegative(cols, "cols"));
   });
   mod.method(raw_method("function_assert_sparsity_out"), [](const Function& f, const std::int64_t index, const Sparsity& sp, const std::int64_t n, const bool allow_all_zero_sparse) {
     f.assert_sparsity_out(
-      checked_index(index, "index"),
+      checked_nonnegative(index, "index"),
       sp,
       checked_nonnegative(n, "n"),
       allow_all_zero_sparse);

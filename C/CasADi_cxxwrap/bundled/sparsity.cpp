@@ -108,7 +108,11 @@ std::vector<std::int64_t> sparsity_size(const Sparsity& sp)
 
 std::int64_t sparsity_size_axis(const Sparsity& sp, const std::int64_t axis)
 {
-  return static_cast<std::int64_t>(sp.size(checked_index(axis, "axis")));
+  if(axis != 0 && axis != 1)
+  {
+    throw std::out_of_range("axis must be 0 or 1");
+  }
+  return static_cast<std::int64_t>(sp.size(static_cast<casadi_int>(axis)));
 }
 
 std::vector<std::int64_t> sparsity_row(const Sparsity& sp)
@@ -153,12 +157,17 @@ std::vector<std::int64_t> sparsity_upper(const Sparsity& sp)
 
 bool sparsity_has_nz(const Sparsity& sp, const std::int64_t row, const std::int64_t col)
 {
-  return sp.has_nz(checked_index(row, "row"), checked_index(col, "col"));
+  return sp.has_nz(checked_nonnegative(row, "row"), checked_nonnegative(col, "col"));
 }
 
 std::int64_t sparsity_get_nz(const Sparsity& sp, const std::int64_t row, const std::int64_t col)
 {
-  return static_cast<std::int64_t>(sp.get_nz(checked_index(row, "row"), checked_index(col, "col")));
+  const casadi_int result = sp.get_nz(checked_nonnegative(row, "row"), checked_nonnegative(col, "col"));
+  if(result < 0)
+  {
+    throw std::out_of_range("(row, col) is not in the sparsity pattern");
+  }
+  return static_cast<std::int64_t>(result);
 }
 
 std::vector<std::int64_t> sparsity_get_nz_vector(
@@ -182,12 +191,12 @@ std::vector<std::int64_t> sparsity_get_nz_indices(const Sparsity& sp, jlcxx::Arr
 
 std::int64_t sparsity_colind_at(const Sparsity& sp, const std::int64_t col)
 {
-  return static_cast<std::int64_t>(sp.colind(checked_index(col, "col")));
+  return static_cast<std::int64_t>(sp.colind(checked_nonnegative(col, "col")));
 }
 
 std::int64_t sparsity_row_at(const Sparsity& sp, const std::int64_t nonzero)
 {
-  return static_cast<std::int64_t>(sp.row(checked_index(nonzero, "nonzero")));
+  return static_cast<std::int64_t>(sp.row(checked_nonnegative(nonzero, "nonzero")));
 }
 
 Sparsity sparsity_transpose(const Sparsity& sp)
@@ -501,7 +510,7 @@ void register_sparsity_bindings(jlcxx::Module& mod)
   mod.method(raw_method("sparsity_nonzeros"), &sparsity_nonzeros);
   mod.method(raw_method("sparsity_compressed"), &sparsity_compressed);
   mod.method(raw_method("sparsity_unit"), [](const std::int64_t n, const std::int64_t el) {
-    return Sparsity::unit(checked_nonnegative(n, "n"), checked_index(el, "el"));
+    return Sparsity::unit(checked_nonnegative(n, "n"), checked_nonnegative(el, "el"));
   });
   mod.method(raw_method("sparsity_upper"), [](const std::int64_t n) { return Sparsity::upper(checked_nonnegative(n, "n")); });
   mod.method(raw_method("sparsity_lower"), [](const std::int64_t n) { return Sparsity::lower(checked_nonnegative(n, "n")); });
@@ -535,7 +544,7 @@ void register_sparsity_bindings(jlcxx::Module& mod)
   mod.method(raw_method("sparsity_dim"), [](const Sparsity& sp, const bool with_nz) { return sp.dim(with_nz); });
   mod.method(raw_method("sparsity_postfix_dim"), [](const Sparsity& sp) { return sp.postfix_dim(); });
   mod.method(raw_method("sparsity_repr_el"), [](const Sparsity& sp, const std::int64_t nonzero) {
-    return sp.repr_el(checked_index(nonzero, "nonzero"));
+    return sp.repr_el(checked_nonnegative(nonzero, "nonzero"));
   });
   mod.method(raw_method("sparsity_is_empty"), [](const Sparsity& sp) { return sp.is_empty(); });
   mod.method(raw_method("sparsity_is_empty"), [](const Sparsity& sp, const bool both) { return sp.is_empty(both); });

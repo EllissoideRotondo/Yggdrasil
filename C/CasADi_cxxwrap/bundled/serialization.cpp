@@ -1,5 +1,7 @@
 #include "casadi_cxxwrap.hpp"
 
+#include <type_traits>
+
 namespace casadi_cxxwrap
 {
 
@@ -274,7 +276,7 @@ XmlNode xml_node_new(const std::string& name, const std::string& text, const std
 
 XmlNode xml_node_child_at(const XmlNode& node, const std::int64_t index)
 {
-  return node[static_cast<std::size_t>(checked_index(index, "index"))];
+  return node[static_cast<std::size_t>(checked_nonnegative(index, "index"))];
 }
 
 void xml_node_add_child(XmlNode& node, const XmlNode& child)
@@ -310,61 +312,33 @@ std::vector<std::int64_t> xml_node_text_int_vector(const XmlNode& node)
   return from_casadi_int_vector(value);
 }
 
+template<typename Serializer>
 void register_serializer_methods(jlcxx::Module& mod, const std::string& prefix)
 {
-  if(prefix == "string")
+  if constexpr(std::is_same_v<Serializer, StringSerializer>)
   {
-    using Serializer = StringSerializer;
-    mod.method(raw_method("string_serializer_encode"), [](Serializer& serializer) { return serializer.encode(); });
-    mod.method(raw_method("string_serializer_pack_sparsity"), &serializer_pack_sparsity<Serializer>);
-    mod.method(raw_method("string_serializer_pack_sx"), &serializer_pack_sx<Serializer>);
-    mod.method(raw_method("string_serializer_pack_mx"), &serializer_pack_mx<Serializer>);
-    mod.method(raw_method("string_serializer_pack_dm"), &serializer_pack_dm<Serializer>);
-    mod.method(raw_method("string_serializer_pack_linsol"), &serializer_pack_linsol<Serializer>);
-    mod.method(raw_method("string_serializer_pack_function"), &serializer_pack_function<Serializer>);
-    mod.method(raw_method("string_serializer_pack_generic"), &serializer_pack_generic<Serializer>);
-    mod.method(raw_method("string_serializer_pack_int"), &serializer_pack_int<Serializer>);
-    mod.method(raw_method("string_serializer_pack_double"), &serializer_pack_double<Serializer>);
-    mod.method(raw_method("string_serializer_pack_string"), &serializer_pack_string<Serializer>);
-    mod.method(raw_method("string_serializer_pack_sparsity_vector"), &serializer_pack_sparsity_vector<Serializer>);
-    mod.method(raw_method("string_serializer_pack_sx_vector"), &serializer_pack_sx_vector<Serializer>);
-    mod.method(raw_method("string_serializer_pack_mx_vector"), &serializer_pack_mx_vector<Serializer>);
-    mod.method(raw_method("string_serializer_pack_dm_vector"), &serializer_pack_dm_vector<Serializer>);
-    mod.method(raw_method("string_serializer_pack_linsol_vector"), &serializer_pack_linsol_vector<Serializer>);
-    mod.method(raw_method("string_serializer_pack_function_vector"), &serializer_pack_function_vector<Serializer>);
-    mod.method(raw_method("string_serializer_pack_generic_vector"), &serializer_pack_generic_vector<Serializer>);
-    mod.method(raw_method("string_serializer_pack_int_vector"), &serializer_pack_int_vector<Serializer>);
-    mod.method(raw_method("string_serializer_pack_double_vector"), &serializer_pack_double_vector<Serializer>);
-    mod.method(raw_method("string_serializer_pack_string_vector"), &serializer_pack_string_vector<Serializer>);
+    mod.method(raw_method(prefix + "_serializer_encode"), [](Serializer& serializer) { return serializer.encode(); });
   }
-  else if(prefix == "file")
-  {
-    using Serializer = FileSerializer;
-    mod.method(raw_method("file_serializer_pack_sparsity"), &serializer_pack_sparsity<Serializer>);
-    mod.method(raw_method("file_serializer_pack_sx"), &serializer_pack_sx<Serializer>);
-    mod.method(raw_method("file_serializer_pack_mx"), &serializer_pack_mx<Serializer>);
-    mod.method(raw_method("file_serializer_pack_dm"), &serializer_pack_dm<Serializer>);
-    mod.method(raw_method("file_serializer_pack_linsol"), &serializer_pack_linsol<Serializer>);
-    mod.method(raw_method("file_serializer_pack_function"), &serializer_pack_function<Serializer>);
-    mod.method(raw_method("file_serializer_pack_generic"), &serializer_pack_generic<Serializer>);
-    mod.method(raw_method("file_serializer_pack_int"), &serializer_pack_int<Serializer>);
-    mod.method(raw_method("file_serializer_pack_double"), &serializer_pack_double<Serializer>);
-    mod.method(raw_method("file_serializer_pack_string"), &serializer_pack_string<Serializer>);
-    mod.method(raw_method("file_serializer_pack_sparsity_vector"), &serializer_pack_sparsity_vector<Serializer>);
-    mod.method(raw_method("file_serializer_pack_sx_vector"), &serializer_pack_sx_vector<Serializer>);
-    mod.method(raw_method("file_serializer_pack_mx_vector"), &serializer_pack_mx_vector<Serializer>);
-    mod.method(raw_method("file_serializer_pack_dm_vector"), &serializer_pack_dm_vector<Serializer>);
-    mod.method(raw_method("file_serializer_pack_linsol_vector"), &serializer_pack_linsol_vector<Serializer>);
-    mod.method(raw_method("file_serializer_pack_function_vector"), &serializer_pack_function_vector<Serializer>);
-    mod.method(raw_method("file_serializer_pack_generic_vector"), &serializer_pack_generic_vector<Serializer>);
-    mod.method(raw_method("file_serializer_pack_int_vector"), &serializer_pack_int_vector<Serializer>);
-    mod.method(raw_method("file_serializer_pack_double_vector"), &serializer_pack_double_vector<Serializer>);
-    mod.method(raw_method("file_serializer_pack_string_vector"), &serializer_pack_string_vector<Serializer>);
-  }
-  else
-  {
-    throw std::invalid_argument("unknown serializer prefix: " + prefix);
-  }
+  mod.method(raw_method(prefix + "_serializer_pack_sparsity"), &serializer_pack_sparsity<Serializer>);
+  mod.method(raw_method(prefix + "_serializer_pack_sx"), &serializer_pack_sx<Serializer>);
+  mod.method(raw_method(prefix + "_serializer_pack_mx"), &serializer_pack_mx<Serializer>);
+  mod.method(raw_method(prefix + "_serializer_pack_dm"), &serializer_pack_dm<Serializer>);
+  mod.method(raw_method(prefix + "_serializer_pack_linsol"), &serializer_pack_linsol<Serializer>);
+  mod.method(raw_method(prefix + "_serializer_pack_function"), &serializer_pack_function<Serializer>);
+  mod.method(raw_method(prefix + "_serializer_pack_generic"), &serializer_pack_generic<Serializer>);
+  mod.method(raw_method(prefix + "_serializer_pack_int"), &serializer_pack_int<Serializer>);
+  mod.method(raw_method(prefix + "_serializer_pack_double"), &serializer_pack_double<Serializer>);
+  mod.method(raw_method(prefix + "_serializer_pack_string"), &serializer_pack_string<Serializer>);
+  mod.method(raw_method(prefix + "_serializer_pack_sparsity_vector"), &serializer_pack_sparsity_vector<Serializer>);
+  mod.method(raw_method(prefix + "_serializer_pack_sx_vector"), &serializer_pack_sx_vector<Serializer>);
+  mod.method(raw_method(prefix + "_serializer_pack_mx_vector"), &serializer_pack_mx_vector<Serializer>);
+  mod.method(raw_method(prefix + "_serializer_pack_dm_vector"), &serializer_pack_dm_vector<Serializer>);
+  mod.method(raw_method(prefix + "_serializer_pack_linsol_vector"), &serializer_pack_linsol_vector<Serializer>);
+  mod.method(raw_method(prefix + "_serializer_pack_function_vector"), &serializer_pack_function_vector<Serializer>);
+  mod.method(raw_method(prefix + "_serializer_pack_generic_vector"), &serializer_pack_generic_vector<Serializer>);
+  mod.method(raw_method(prefix + "_serializer_pack_int_vector"), &serializer_pack_int_vector<Serializer>);
+  mod.method(raw_method(prefix + "_serializer_pack_double_vector"), &serializer_pack_double_vector<Serializer>);
+  mod.method(raw_method(prefix + "_serializer_pack_string_vector"), &serializer_pack_string_vector<Serializer>);
 }
 
 template<typename Deserializer>
@@ -500,8 +474,8 @@ void register_serialization_bindings(jlcxx::Module& mod)
       static_cast<StringSerializer::SerializationType>(checked_casadi_int(value, "serialization_type")));
   });
 
-  register_serializer_methods(mod, "string");
-  register_serializer_methods(mod, "file");
+  register_serializer_methods<StringSerializer>(mod, "string");
+  register_serializer_methods<FileSerializer>(mod, "file");
   register_deserializer_methods<StringDeserializer>(mod, "string_deserializer");
   register_deserializer_methods<FileDeserializer>(mod, "file_deserializer");
   mod.method(raw_method("string_deserializer_decode"), [](StringDeserializer& deserializer, const std::string& value) {

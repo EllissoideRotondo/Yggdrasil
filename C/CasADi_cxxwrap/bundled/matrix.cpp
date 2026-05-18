@@ -77,13 +77,13 @@ T dense_from_vector(jlcxx::ArrayRef<double> values, const std::int64_t rows, con
 template<typename T>
 T element_at(const T& value, const std::int64_t row, const std::int64_t col)
 {
-  return T(value(checked_index(row, "row"), checked_index(col, "col")));
+  return T(value(checked_nonnegative(row, "row"), checked_nonnegative(col, "col")));
 }
 
 template<typename T>
 void set_element(T& value, const std::int64_t row, const std::int64_t col, const T& replacement)
 {
-  value(checked_index(row, "row"), checked_index(col, "col")) = replacement;
+  value(checked_nonnegative(row, "row"), checked_nonnegative(col, "col")) = replacement;
 }
 
 template<typename T>
@@ -352,13 +352,23 @@ std::vector<double> dm_full(const DM& value)
     return value.get_nonzeros();
   }
 
-  std::vector<double> out;
-  out.reserve(static_cast<std::size_t>(value.numel()));
-  for(casadi_int col = 0; col != value.size2(); ++col)
+  const casadi_int nrows = value.size1();
+  const casadi_int ncols = value.size2();
+  std::vector<double> out(checked_size_product(nrows, ncols, "DM size"), 0.0);
+
+  const Sparsity& sp = value.sparsity();
+  const casadi_int* const colind = sp.colind();
+  const casadi_int* const rowvec = sp.row();
+  const std::vector<double> nzvals = value.get_nonzeros();
+
+  for(casadi_int col = 0; col != ncols; ++col)
   {
-    for(casadi_int row = 0; row != value.size1(); ++row)
+    for(casadi_int k = colind[col]; k != colind[col + 1]; ++k)
     {
-      out.push_back(static_cast<double>(value(row, col)));
+      const auto dense_index =
+        static_cast<std::size_t>(rowvec[k]) +
+        static_cast<std::size_t>(col) * static_cast<std::size_t>(nrows);
+      out[dense_index] = nzvals[static_cast<std::size_t>(k)];
     }
   }
   return out;
@@ -367,13 +377,16 @@ std::vector<double> dm_full(const DM& value)
 template<typename T>
 void register_matrix_serialization(jlcxx::Module& mod, const std::string& prefix)
 {
-  mod.method(raw_method(prefix, "serialize"), [](const T& value) { return value.serialize(); });
-  mod.method(raw_method(prefix, "deserialize"), [](const std::string& value) { return T::deserialize(value); });
-  mod.method(raw_method(prefix, "export_code"), [](const T& value, const std::string& language, const GenericType& options) {
-    std::ostringstream out;
-    value.export_code(language, out, generic_as_dict(options, "matrix export_code options"));
-    return out.str();
-  });
+  if constexpr(!std::is_same_v<T, MX>)
+  {
+    mod.method(raw_method(prefix, "serialize"), [](const T& value) { return value.serialize(); });
+    mod.method(raw_method(prefix, "deserialize"), [](const std::string& value) { return T::deserialize(value); });
+    mod.method(raw_method(prefix, "export_code"), [](const T& value, const std::string& language, const GenericType& options) {
+      std::ostringstream out;
+      value.export_code(language, out, generic_as_dict(options, "matrix export_code options"));
+      return out.str();
+    });
+  }
 }
 
 template<typename T>
@@ -410,7 +423,7 @@ void register_matrix_common(jlcxx::Module& mod, const std::string& prefix)
   mod.method(raw_method(prefix, "is_eye"), [](const T& value) { return value.is_eye(); });
   mod.method(raw_method(prefix, "op"), [](const T& value) { return static_cast<std::int64_t>(value.op()); });
   mod.method(raw_method(prefix, "is_op"), [](const T& value, const std::int64_t op) {
-    return value.is_op(checked_index(op, "op"));
+    return value.is_op(checked_nonnegative(op, "op"));
   });
   mod.method(raw_method(prefix, "info"), [](const T& value) {
     return GenericType(value.info());
@@ -581,7 +594,7 @@ void register_matrix_common(jlcxx::Module& mod, const std::string& prefix)
   if constexpr(!std::is_same_v<T, MX>)
   {
     mod.method(raw_method(prefix, "has_nz"), [](const T& value, const std::int64_t row, const std::int64_t col) {
-      return value.has_nz(checked_index(row, "row"), checked_index(col, "col"));
+      return value.has_nz(checked_nonnegative(row, "row"), checked_nonnegative(col, "col"));
     });
     mod.method(raw_method(prefix, "is_integer"), [](const T& value) { return value.is_integer(); });
     mod.method(raw_method(prefix, "has_zeros"), [](const T& value) { return value.has_zeros(); });

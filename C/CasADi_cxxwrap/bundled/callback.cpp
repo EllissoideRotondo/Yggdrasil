@@ -116,8 +116,8 @@ JacSparsityMap jac_sparsity_map(
   JacSparsityMap out;
   for(std::size_t i = 0; i != output_indices.size(); ++i)
   {
-    const auto output_index = checked_index(output_indices[i], "output index");
-    const auto input_index = checked_index(input_indices[i], "input index");
+    const auto output_index = checked_nonnegative(output_indices[i], "output index");
+    const auto input_index = checked_nonnegative(input_indices[i], "input index");
     const auto inserted = out.emplace(std::make_pair(output_index, input_index), sparsities[i]);
     if(!inserted.second)
     {
@@ -155,11 +155,7 @@ public:
       has_jacobian_(!jacobian_.is_null()),
       uses_output_(uses_output)
   {
-    if(evaluator_ == nullptr)
-    {
-      throw std::invalid_argument("callback evaluator cannot be null");
-    }
-
+    require_julia_function(evaluator_);
     jlcxx::protect_from_gc(evaluator_);
     try
     {
@@ -179,6 +175,10 @@ public:
 
   std::vector<DM> eval(const std::vector<DM>& arg) const override
   {
+    require_julia_thread(
+      "JuliaCallback cannot be evaluated on a non-Julia thread. "
+      "Function::map with 'thread' parallelism is not supported when a Julia callback is involved.");
+
     jlcxx::Array<DM> args;
     for(const DM& value : arg)
     {
@@ -188,11 +188,20 @@ public:
     jl_value_t* args_value = reinterpret_cast<jl_value_t*>(args.wrapped());
     jl_value_t* result = nullptr;
     JL_GC_PUSH2(&args_value, &result);
-    result = call_julia_function(evaluator_, args_value);
-    if(jl_exception_occurred())
+    try
     {
-      jl_call2(jl_get_function(jl_base_module, "showerror"), jl_stderr_obj(), jl_exception_occurred());
+      result = call_julia_function(evaluator_, args_value);
+    }
+    catch(...)
+    {
+      JL_GC_POP();
+      throw;
+    }
+    if(jl_value_t* exception = jl_exception_occurred())
+    {
+      jl_call2(jl_get_function(jl_base_module, "showerror"), jl_stderr_obj(), exception);
       jl_printf(jl_stderr_stream(), "\n");
+      jl_exception_clear();
       JL_GC_POP();
       throw std::runtime_error("Julia callback evaluation failed");
     }
@@ -213,12 +222,12 @@ public:
 
   casadi_int get_n_in() override
   {
-    return static_cast<casadi_int>(input_sparsities_.size());
+    return checked_casadi_int_size(input_sparsities_.size(), "callback input count");
   }
 
   casadi_int get_n_out() override
   {
-    return static_cast<casadi_int>(output_sparsities_.size());
+    return checked_casadi_int_size(output_sparsities_.size(), "callback output count");
   }
 
   Sparsity get_sparsity_in(const casadi_int i) override
@@ -487,17 +496,10 @@ void register_callback_bindings(jlcxx::Module& mod)
         registry.begin(),
         registry.end(),
         [&name](const std::shared_ptr<JuliaCallback>& callback) {
-          return callback && callback->name() == name;
+          return callback && callback->name() == name && callback->getCount() <= 1;
         }),
       registry.end());
     return static_cast<std::int64_t>(old_size - registry.size());
-  });
-  mod.method(raw_method("callback_release_all"), []() {
-    std::lock_guard<std::mutex> lock(callback_registry_mutex());
-    auto& registry = callback_registry();
-    const auto old_size = registry.size();
-    registry.clear();
-    return static_cast<std::int64_t>(old_size);
   });
 }
 

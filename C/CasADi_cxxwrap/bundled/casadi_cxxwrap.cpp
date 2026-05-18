@@ -81,6 +81,4 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
   casadi_cxxwrap::register_linsol_bindings(mod);
   casadi_cxxwrap::register_utility_bindings(mod);
   casadi_cxxwrap::register_serialization_bindings(mod);
-
-  mod.method("casadi_version_raw", []() { return casadi::CodeGenerator::casadi_version(); });
 }

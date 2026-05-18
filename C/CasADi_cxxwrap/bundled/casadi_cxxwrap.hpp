@@ -149,9 +149,10 @@ struct MXSharedResult
 };
 
 casadi_int checked_casadi_int(std::int64_t value, const char* name);
+casadi_int checked_casadi_int_size(std::size_t value, const char* name);
+std::int64_t checked_int64_size(std::size_t value, const char* name);
 casadi_int checked_nonnegative(std::int64_t value, const char* name);
 casadi_int checked_positive(std::int64_t value, const char* name);
-casadi_int checked_index(std::int64_t value, const char* name);
 
 std::string raw_method(const std::string& name);
 std::string raw_method(const std::string& prefix, const std::string& name);
@@ -182,10 +183,29 @@ std::string to_string(const T& value)
 Dict make_codegen_options(bool with_header, bool main, bool mex, bool cpp);
 const Dict& generic_as_dict(const GenericType& value, const char* name);
 
+inline void require_julia_thread(const char* message)
+{
+  if(jl_get_current_task() == nullptr)
+  {
+    throw std::runtime_error(message);
+  }
+}
+
+inline void require_julia_function(jl_value_t* function)
+{
+  if(function == nullptr)
+  {
+    throw std::invalid_argument("Julia callback evaluator cannot be null");
+  }
+  if(!jl_isa(function, reinterpret_cast<jl_value_t*>(jl_function_type)))
+  {
+    throw std::invalid_argument("Julia callback evaluator must be a Julia Function");
+  }
+}
+
 inline jl_value_t* call_julia_function(jl_value_t* function, jl_value_t* argument)
 {
-  using JuliaFunctionPointer = decltype(jl_get_function(jl_base_module, "identity"));
-  return jl_call1(reinterpret_cast<JuliaFunctionPointer>(function), argument);
+  return jl_call1(function, argument);
 }
 
 template<typename T>

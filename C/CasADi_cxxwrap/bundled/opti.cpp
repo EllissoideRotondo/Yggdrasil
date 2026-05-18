@@ -33,10 +33,7 @@ public:
   explicit JuliaOptiCallback(jl_value_t* evaluator)
     : evaluator_(evaluator)
   {
-    if(evaluator_ == nullptr)
-    {
-      throw std::invalid_argument("Opti callback evaluator cannot be null");
-    }
+    require_julia_function(evaluator_);
     jlcxx::protect_from_gc(evaluator_);
   }
 
@@ -47,13 +44,26 @@ public:
 
   void call(const casadi_int iteration) override
   {
+    require_julia_thread(
+      "JuliaOptiCallback cannot be evaluated on a non-Julia thread. "
+      "Threaded CasADi solver callbacks are not supported when a Julia callback is involved.");
+
     jl_value_t* iteration_value = jl_box_int64(static_cast<std::int64_t>(iteration));
     JL_GC_PUSH1(&iteration_value);
-    call_julia_function(evaluator_, iteration_value);
-    if(jl_exception_occurred())
+    try
     {
-      jl_call2(jl_get_function(jl_base_module, "showerror"), jl_stderr_obj(), jl_exception_occurred());
+      call_julia_function(evaluator_, iteration_value);
+    }
+    catch(...)
+    {
+      JL_GC_POP();
+      throw;
+    }
+    if(jl_value_t* exception = jl_exception_occurred())
+    {
+      jl_call2(jl_get_function(jl_base_module, "showerror"), jl_stderr_obj(), exception);
       jl_printf(jl_stderr_stream(), "\n");
+      jl_exception_clear();
       JL_GC_POP();
       throw std::runtime_error("Julia Opti callback evaluation failed");
     }
@@ -84,9 +94,37 @@ casadi_int opti_registry_key(const Opti& opti)
 void set_opti_callback(Opti& opti, jl_value_t* evaluator)
 {
   auto callback = std::make_shared<JuliaOptiCallback>(evaluator);
-  opti.callback_class(callback.get());
-  std::lock_guard<std::mutex> lock(opti_callback_registry_mutex());
-  opti_callback_registry()[opti_registry_key(opti)] = std::move(callback);
+  const casadi_int key = opti_registry_key(opti);
+  std::shared_ptr<JuliaOptiCallback> previous;
+  {
+    std::lock_guard<std::mutex> lock(opti_callback_registry_mutex());
+    auto& stored = opti_callback_registry()[key];
+    previous = stored;
+    stored = callback;
+  }
+
+  try
+  {
+    opti.callback_class(callback.get());
+  }
+  catch(...)
+  {
+    std::lock_guard<std::mutex> lock(opti_callback_registry_mutex());
+    auto& registry = opti_callback_registry();
+    const auto it = registry.find(key);
+    if(it != registry.end() && it->second == callback)
+    {
+      if(previous)
+      {
+        it->second = std::move(previous);
+      }
+      else
+      {
+        registry.erase(it);
+      }
+    }
+    throw;
+  }
 }
 
 void clear_opti_callback(Opti& opti)
@@ -397,25 +435,25 @@ void register_opti_bindings(jlcxx::Module& mod)
     return opti.active_values(opti_variable_type(type));
   });
   mod.method(raw_method("opti_advanced_x_lookup"), [](const OptiAdvanced& opti, const std::int64_t index) {
-    return opti.x_lookup(checked_index(index, "index"));
+    return opti.x_lookup(checked_nonnegative(index, "index"));
   });
   mod.method(raw_method("opti_advanced_g_lookup"), [](const OptiAdvanced& opti, const std::int64_t index) {
-    return opti.g_lookup(checked_index(index, "index"));
+    return opti.g_lookup(checked_nonnegative(index, "index"));
   });
   mod.method(raw_method("opti_advanced_g_index_reduce_g"), [](const OptiAdvanced& opti, const std::int64_t index) {
-    return static_cast<std::int64_t>(opti.g_index_reduce_g(checked_index(index, "index")));
+    return static_cast<std::int64_t>(opti.g_index_reduce_g(checked_nonnegative(index, "index")));
   });
   mod.method(raw_method("opti_advanced_g_index_reduce_x"), [](const OptiAdvanced& opti, const std::int64_t index) {
-    return static_cast<std::int64_t>(opti.g_index_reduce_x(checked_index(index, "index")));
+    return static_cast<std::int64_t>(opti.g_index_reduce_x(checked_nonnegative(index, "index")));
   });
   mod.method(raw_method("opti_advanced_g_index_unreduce_g"), [](const OptiAdvanced& opti, const std::int64_t index) {
-    return static_cast<std::int64_t>(opti.g_index_unreduce_g(checked_index(index, "index")));
+    return static_cast<std::int64_t>(opti.g_index_unreduce_g(checked_nonnegative(index, "index")));
   });
   mod.method(raw_method("opti_advanced_x_describe"), [](const OptiAdvanced& opti, const std::int64_t index, const GenericType& options) {
-    return opti.x_describe(checked_index(index, "index"), generic_as_dict(options, "Opti x_describe options"));
+    return opti.x_describe(checked_nonnegative(index, "index"), generic_as_dict(options, "Opti x_describe options"));
   });
   mod.method(raw_method("opti_advanced_g_describe"), [](const OptiAdvanced& opti, const std::int64_t index, const GenericType& options) {
-    return opti.g_describe(checked_index(index, "index"), generic_as_dict(options, "Opti g_describe options"));
+    return opti.g_describe(checked_nonnegative(index, "index"), generic_as_dict(options, "Opti g_describe options"));
   });
   mod.method(raw_method("opti_advanced_describe"), [](const OptiAdvanced& opti, const MX& expression, const std::int64_t indent, const GenericType& options) {
     return opti.describe(

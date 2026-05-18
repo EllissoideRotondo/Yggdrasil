@@ -322,7 +322,7 @@ void register_dae_builder_bindings(jlcxx::Module& mod)
     return dae.transition(name);
   });
   mod.method(raw_method("dae_transition_index"), [](const DaeBuilder& dae, const std::string& name, const std::int64_t index) {
-    return dae.transition(name, checked_index(index, "index"));
+    return dae.transition(name, checked_nonnegative(index, "index"));
   });
   mod.method(raw_method("dae_transition_default"), [](const DaeBuilder& dae) { return dae.transition(); });
   mod.method(raw_method("dae_var"), [](const DaeBuilder& dae, const std::string& name) { return dae.var(name); });
@@ -338,7 +338,7 @@ void register_dae_builder_bindings(jlcxx::Module& mod)
     return static_cast<std::int64_t>(dae.value_reference(name));
   });
   mod.method(raw_method("dae_set_value_reference"), [](DaeBuilder& dae, const std::string& name, const std::int64_t value) {
-    dae.set_value_reference(name, checked_index(value, "value_reference"));
+    dae.set_value_reference(name, checked_nonnegative(value, "value_reference"));
   });
   mod.method(raw_method("dae_description"), [](const DaeBuilder& dae, const std::string& name) { return dae.description(name); });
   mod.method(raw_method("dae_set_description"), [](DaeBuilder& dae, const std::string& name, const std::string& value) {
@@ -428,7 +428,7 @@ void register_dae_builder_bindings(jlcxx::Module& mod)
   mod.method(raw_method("dae_nominal_vector"), &dae_nominal_vector);
   mod.method(raw_method("dae_set_nominal_vector"), &dae_set_nominal_vector);
   mod.method(raw_method("dae_start_vector"), &dae_start_vector);
-  mod.method(raw_method("dae_set_start_names"), &dae_set_start_vector);
+  mod.method(raw_method("dae_set_start_names_values"), &dae_set_start_vector);
   mod.method(raw_method("dae_set_values"), &dae_set_values);
   mod.method(raw_method("dae_set_string_values"), &dae_set_string_values);
   mod.method(raw_method("dae_get_values"), &dae_get_values);

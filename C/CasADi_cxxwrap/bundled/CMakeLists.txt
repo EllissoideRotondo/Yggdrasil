@@ -2,10 +2,6 @@ cmake_minimum_required(VERSION 3.16)
 
 project(CasADiCxxWrap LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
 find_package(JlCxx REQUIRED)
 
 set(Julia_PREFIX "" CACHE PATH "Julia installation prefix")
@@ -69,6 +65,7 @@ set(CASADI_CXXWRAP_SOURCES
 
 add_library(casadicxxwrap SHARED ${CASADI_CXXWRAP_SOURCES})
 
+set_target_properties(casadicxxwrap PROPERTIES CXX_EXTENSIONS OFF)
 target_compile_features(casadicxxwrap PRIVATE cxx_std_17)
 target_include_directories(casadicxxwrap PRIVATE "${Julia_PREFIX}/include/julia")
 
