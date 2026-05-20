@@ -34,6 +34,7 @@ using casadi::Opti;
 using casadi::OptiAdvanced;
 using casadi::OptiCallback;
 using casadi::OptiSol;
+using casadi::Resource;
 using casadi::Sparsity;
 using casadi::SpDict;
 using casadi::Linsol;
@@ -191,21 +192,18 @@ inline void require_julia_thread(const char* message)
   }
 }
 
-inline void require_julia_function(jl_value_t* function)
+inline void require_julia_callable(jl_value_t* function)
 {
   if(function == nullptr)
   {
     throw std::invalid_argument("Julia callback evaluator cannot be null");
   }
-  if(!jl_isa(function, reinterpret_cast<jl_value_t*>(jl_function_type)))
-  {
-    throw std::invalid_argument("Julia callback evaluator must be a Julia Function");
-  }
 }
 
 inline jl_value_t* call_julia_function(jl_value_t* function, jl_value_t* argument)
 {
-  return jl_call1(function, argument);
+  jl_value_t* args[1] = {argument};
+  return jl_apply_generic(function, args, 1);
 }
 
 template<typename T>

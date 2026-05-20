@@ -700,16 +700,16 @@ void register_matrix_bindings(jlcxx::Module& mod)
   mod.method(raw_method("mx_shared_variables"), [](const MXSharedResult& result) { return result.variables; });
   mod.method(raw_method("mx_shared_definitions"), [](const MXSharedResult& result) { return result.definitions; });
 
-  mod.method(raw_method("sx_sym"), [](const std::string& name) { return SX::sym(name); });
-  mod.method(raw_method("sx_sym"), [](const std::string& name, const std::int64_t rows, const std::int64_t cols) {
+  mod.method(raw_method("sx_sym_scalar"), [](const std::string& name) { return SX::sym(name); });
+  mod.method(raw_method("sx_sym_matrix"), [](const std::string& name, const std::int64_t rows, const std::int64_t cols) {
     return SX::sym(name, checked_nonnegative(rows, "rows"), checked_nonnegative(cols, "cols"));
   });
   mod.method(raw_method("sx_sym_sparsity"), [](const std::string& name, const Sparsity& sp) {
     return SX::sym(name, sp);
   });
 
-  mod.method(raw_method("mx_sym"), [](const std::string& name) { return MX::sym(name); });
-  mod.method(raw_method("mx_sym"), [](const std::string& name, const std::int64_t rows, const std::int64_t cols) {
+  mod.method(raw_method("mx_sym_scalar"), [](const std::string& name) { return MX::sym(name); });
+  mod.method(raw_method("mx_sym_matrix"), [](const std::string& name, const std::int64_t rows, const std::int64_t cols) {
     return MX::sym(name, checked_nonnegative(rows, "rows"), checked_nonnegative(cols, "cols"));
   });
   mod.method(raw_method("mx_sym_sparsity"), [](const std::string& name, const Sparsity& sp) {

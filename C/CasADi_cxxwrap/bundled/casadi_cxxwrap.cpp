@@ -16,6 +16,9 @@ void register_types(jlcxx::Module& mod)
   mod.add_type<Function>("CasadiFunction");
   mod.add_type<GenericType>("GenericType");
   mod.add_type<Importer>("Importer");
+  mod.add_type<Resource>("Resource")
+    .constructor<>()
+    .constructor<const std::string&>();
   mod.add_type<XmlNode>("XmlNode")
     .constructor<>();
   mod.add_type<XmlFile>("XmlFile")

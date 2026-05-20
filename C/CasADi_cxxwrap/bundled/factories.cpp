@@ -341,6 +341,13 @@ void register_factory_bindings(jlcxx::Module& mod)
   mod.method(raw_method("has_dple"), [](const std::string& plugin) { return casadi::has_dple(plugin); });
   mod.method(raw_method("load_dple"), [](const std::string& plugin) { casadi::load_dple(plugin); });
   mod.method(raw_method("doc_dple"), [](const std::string& plugin) { return casadi::doc_dple(plugin); });
+
+  mod.method(raw_method("has_archiver"), [](const std::string& plugin) { return casadi::has_archiver(plugin); });
+  mod.method(raw_method("load_archiver"), [](const std::string& plugin) { casadi::load_archiver(plugin); });
+  mod.method(raw_method("doc_archiver"), [](const std::string& plugin) { return casadi::doc_archiver(plugin); });
+  mod.method(raw_method("has_filesystem"), [](const std::string& plugin) { return casadi::has_filesystem(plugin); });
+  mod.method(raw_method("load_filesystem"), [](const std::string& plugin) { casadi::load_filesystem(plugin); });
+  mod.method(raw_method("doc_filesystem"), [](const std::string& plugin) { return casadi::doc_filesystem(plugin); });
 }
 
 } // namespace casadi_cxxwrap

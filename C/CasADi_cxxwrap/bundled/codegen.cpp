@@ -17,10 +17,10 @@ void register_codegen_bindings(jlcxx::Module& mod)
   mod.method(raw_method("codegen_add_with_sparsity"), [](CodeGenerator& generator, const Function& f, const bool with_jac_sparsity) {
     generator.add(f, with_jac_sparsity);
   });
-  mod.method(raw_method("codegen_generate"), [](CodeGenerator& generator) {
+  mod.method(raw_method("codegen_generate_default"), [](CodeGenerator& generator) {
     return generator.generate();
   });
-  mod.method(raw_method("codegen_generate"), [](CodeGenerator& generator, const std::string& prefix) {
+  mod.method(raw_method("codegen_generate_prefix"), [](CodeGenerator& generator, const std::string& prefix) {
     return generator.generate(prefix);
   });
   mod.method(raw_method("codegen_dump"), [](CodeGenerator& generator) {

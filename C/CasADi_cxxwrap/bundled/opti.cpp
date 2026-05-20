@@ -33,7 +33,7 @@ public:
   explicit JuliaOptiCallback(jl_value_t* evaluator)
     : evaluator_(evaluator)
   {
-    require_julia_function(evaluator_);
+    require_julia_callable(evaluator_);
     jlcxx::protect_from_gc(evaluator_);
   }
 
@@ -408,6 +408,13 @@ void register_opti_bindings(jlcxx::Module& mod)
   mod.method(raw_method("opti_callback_registry_size"), []() {
     std::lock_guard<std::mutex> lock(opti_callback_registry_mutex());
     return static_cast<std::int64_t>(opti_callback_registry().size());
+  });
+  mod.method(raw_method("opti_callback_clear_registry"), []() {
+    std::lock_guard<std::mutex> lock(opti_callback_registry_mutex());
+    auto& registry = opti_callback_registry();
+    const auto old_size = registry.size();
+    registry.clear();
+    return static_cast<std::int64_t>(old_size);
   });
 
   mod.method(raw_method("opti_advanced_string"), [](const OptiAdvanced& opti, const bool more) {

@@ -388,8 +388,28 @@ Sparsity sparsity_append_columns(const Sparsity& sp, const Sparsity& other)
 
 SparsityMappingResult sparsity_remove_duplicates(const Sparsity& sp, jlcxx::ArrayRef<std::int64_t> mapping)
 {
+  const auto expected = static_cast<std::size_t>(sp.nnz());
+  if(mapping.size() != expected)
+  {
+    throw std::invalid_argument("removeDuplicates mapping length must match sparsity nnz");
+  }
+
   Sparsity value = sp;
   std::vector<casadi_int> out = to_casadi_int_vector(mapping);
+  value.removeDuplicates(out);
+  return {value, from_casadi_int_vector(out)};
+}
+
+SparsityMappingResult sparsity_remove_duplicates_default(const Sparsity& sp)
+{
+  Sparsity value = sp;
+  std::vector<casadi_int> out;
+  const auto nnz = sp.nnz();
+  out.reserve(static_cast<std::size_t>(nnz));
+  for(casadi_int i = 0; i != nnz; ++i)
+  {
+    out.push_back(i);
+  }
   value.removeDuplicates(out);
   return {value, from_casadi_int_vector(out)};
 }
@@ -546,8 +566,8 @@ void register_sparsity_bindings(jlcxx::Module& mod)
   mod.method(raw_method("sparsity_repr_el"), [](const Sparsity& sp, const std::int64_t nonzero) {
     return sp.repr_el(checked_nonnegative(nonzero, "nonzero"));
   });
-  mod.method(raw_method("sparsity_is_empty"), [](const Sparsity& sp) { return sp.is_empty(); });
-  mod.method(raw_method("sparsity_is_empty"), [](const Sparsity& sp, const bool both) { return sp.is_empty(both); });
+  mod.method(raw_method("sparsity_is_empty_default"), [](const Sparsity& sp) { return sp.is_empty(); });
+  mod.method(raw_method("sparsity_is_empty_both"), [](const Sparsity& sp, const bool both) { return sp.is_empty(both); });
   mod.method(raw_method("sparsity_is_scalar"), [](const Sparsity& sp, const bool scalar_and_dense) {
     return sp.is_scalar(scalar_and_dense);
   });
@@ -649,6 +669,7 @@ void register_sparsity_bindings(jlcxx::Module& mod)
   mod.method(raw_method("sparsity_append"), &sparsity_append);
   mod.method(raw_method("sparsity_append_columns"), &sparsity_append_columns);
   mod.method(raw_method("sparsity_remove_duplicates"), &sparsity_remove_duplicates);
+  mod.method(raw_method("sparsity_remove_duplicates_default"), &sparsity_remove_duplicates_default);
   mod.method(raw_method("sparsity_etree"), [](const Sparsity& sp, const bool ata) {
     return from_casadi_int_vector(sp.etree(ata));
   });

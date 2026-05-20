@@ -235,6 +235,11 @@ void register_utility_bindings(jlcxx::Module& mod)
   mod.method(raw_method("mx_simple_bounds_lam_forward"), [](const MXSimpleBoundsResult& result) { return result.lam_forward; });
   mod.method(raw_method("mx_simple_bounds_lam_backward"), [](const MXSimpleBoundsResult& result) { return result.lam_backward; });
 
+  mod.method(raw_method("resource_path"), [](const Resource& resource) { return std::string(resource.path()); });
+  mod.method(raw_method("resource_change_option"), [](Resource& resource, const std::string& option_name, const GenericType& option_value) {
+    resource.change_option(option_name, option_value);
+  });
+
   mod.method(raw_method("casadi_meta_version"), []() { return std::string(casadi::CasadiMeta::version()); });
   mod.method(raw_method("casadi_meta_git_revision"), []() { return std::string(casadi::CasadiMeta::git_revision()); });
   mod.method(raw_method("casadi_meta_git_describe"), []() { return std::string(casadi::CasadiMeta::git_describe()); });

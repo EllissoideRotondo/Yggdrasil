@@ -155,7 +155,7 @@ public:
       has_jacobian_(!jacobian_.is_null()),
       uses_output_(uses_output)
   {
-    require_julia_function(evaluator_);
+    require_julia_callable(evaluator_);
     jlcxx::protect_from_gc(evaluator_);
     try
     {
@@ -486,6 +486,13 @@ void register_callback_bindings(jlcxx::Module& mod)
   });
   mod.method(raw_method("callback_sweep_unused"), []() {
     return sweep_unused_callbacks();
+  });
+  mod.method(raw_method("callback_clear_registry"), []() {
+    std::lock_guard<std::mutex> lock(callback_registry_mutex());
+    auto& registry = callback_registry();
+    const auto old_size = registry.size();
+    registry.clear();
+    return static_cast<std::int64_t>(old_size);
   });
   mod.method(raw_method("callback_release_name"), [](const std::string& name) {
     std::lock_guard<std::mutex> lock(callback_registry_mutex());
