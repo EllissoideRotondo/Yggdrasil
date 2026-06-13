@@ -50,7 +50,6 @@ set(CASADI_CXXWRAP_SOURCES
   casadi_cxxwrap.cpp
   codegen.cpp
   common.cpp
-  dm_dict.cpp
   factories.cpp
   functions.cpp
   interpolant.cpp

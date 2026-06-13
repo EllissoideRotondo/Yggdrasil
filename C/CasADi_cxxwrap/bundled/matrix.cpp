@@ -644,6 +644,9 @@ void register_symbolic_utilities(jlcxx::Module& mod, const std::string& prefix)
     return simplify(expression);
   });
   mod.method(raw_method(prefix, "n_nodes"), &symbolic_node_count<T>);
+  mod.method(raw_method(prefix, "print_operator"), [](const T& value, jlcxx::ArrayRef<std::string> args) {
+    return T::print_operator(value, to_vector(args));
+  });
   mod.method(raw_method(prefix, "cse"), [](const T& expression) {
     return cse(expression);
   });
@@ -700,16 +703,16 @@ void register_matrix_bindings(jlcxx::Module& mod)
   mod.method(raw_method("mx_shared_variables"), [](const MXSharedResult& result) { return result.variables; });
   mod.method(raw_method("mx_shared_definitions"), [](const MXSharedResult& result) { return result.definitions; });
 
-  mod.method(raw_method("sx_sym_scalar"), [](const std::string& name) { return SX::sym(name); });
-  mod.method(raw_method("sx_sym_matrix"), [](const std::string& name, const std::int64_t rows, const std::int64_t cols) {
+  mod.method(raw_method("sx_sym"), [](const std::string& name) { return SX::sym(name); });
+  mod.method(raw_method("sx_sym"), [](const std::string& name, const std::int64_t rows, const std::int64_t cols) {
     return SX::sym(name, checked_nonnegative(rows, "rows"), checked_nonnegative(cols, "cols"));
   });
   mod.method(raw_method("sx_sym_sparsity"), [](const std::string& name, const Sparsity& sp) {
     return SX::sym(name, sp);
   });
 
-  mod.method(raw_method("mx_sym_scalar"), [](const std::string& name) { return MX::sym(name); });
-  mod.method(raw_method("mx_sym_matrix"), [](const std::string& name, const std::int64_t rows, const std::int64_t cols) {
+  mod.method(raw_method("mx_sym"), [](const std::string& name) { return MX::sym(name); });
+  mod.method(raw_method("mx_sym"), [](const std::string& name, const std::int64_t rows, const std::int64_t cols) {
     return MX::sym(name, checked_nonnegative(rows, "rows"), checked_nonnegative(cols, "cols"));
   });
   mod.method(raw_method("mx_sym_sparsity"), [](const std::string& name, const Sparsity& sp) {

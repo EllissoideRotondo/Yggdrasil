@@ -108,9 +108,10 @@ std::vector<std::int64_t> sparsity_size(const Sparsity& sp)
 
 std::int64_t sparsity_size_axis(const Sparsity& sp, const std::int64_t axis)
 {
-  if(axis != 0 && axis != 1)
+  // CasADi's Sparsity::size uses 1-based axes: 1 = rows, 2 = columns.
+  if(axis != 1 && axis != 2)
   {
-    throw std::out_of_range("axis must be 0 or 1");
+    throw std::out_of_range("axis must be 1 or 2");
   }
   return static_cast<std::int64_t>(sp.size(static_cast<casadi_int>(axis)));
 }
@@ -566,8 +567,8 @@ void register_sparsity_bindings(jlcxx::Module& mod)
   mod.method(raw_method("sparsity_repr_el"), [](const Sparsity& sp, const std::int64_t nonzero) {
     return sp.repr_el(checked_nonnegative(nonzero, "nonzero"));
   });
-  mod.method(raw_method("sparsity_is_empty_default"), [](const Sparsity& sp) { return sp.is_empty(); });
-  mod.method(raw_method("sparsity_is_empty_both"), [](const Sparsity& sp, const bool both) { return sp.is_empty(both); });
+  mod.method(raw_method("sparsity_is_empty"), [](const Sparsity& sp) { return sp.is_empty(); });
+  mod.method(raw_method("sparsity_is_empty"), [](const Sparsity& sp, const bool both) { return sp.is_empty(both); });
   mod.method(raw_method("sparsity_is_scalar"), [](const Sparsity& sp, const bool scalar_and_dense) {
     return sp.is_scalar(scalar_and_dense);
   });

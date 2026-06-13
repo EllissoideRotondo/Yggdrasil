@@ -211,6 +211,13 @@ void register_utility_bindings(jlcxx::Module& mod)
   });
 
   mod.method(raw_method("dm_dict_new"), &dm_dict_from_arrays);
+  mod.method(raw_method("dm_dict_size"), [](const DMDict& dict) { return static_cast<std::int64_t>(dict.size()); });
+  mod.method(raw_method("dm_dict_keys"), &typed_dict_keys<DM>);
+  mod.method(raw_method("dm_dict_values"), &typed_dict_values<DM>);
+  mod.method(raw_method("dm_dict_has"), &typed_dict_has<DM>);
+  mod.method(raw_method("dm_dict_get"), [](const DMDict& dict, const std::string& key) {
+    return typed_dict_get(dict, key, "DMDict");
+  });
 
   mod.method(raw_method("sx_dict_stats_value"), [](const SXDictStatsResult& result) { return result.value; });
   mod.method(raw_method("sx_dict_stats_stats"), [](const SXDictStatsResult& result) { return result.stats; });

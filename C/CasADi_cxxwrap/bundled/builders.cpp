@@ -428,7 +428,7 @@ void register_dae_builder_bindings(jlcxx::Module& mod)
   mod.method(raw_method("dae_nominal_vector"), &dae_nominal_vector);
   mod.method(raw_method("dae_set_nominal_vector"), &dae_set_nominal_vector);
   mod.method(raw_method("dae_start_vector"), &dae_start_vector);
-  mod.method(raw_method("dae_set_start_names_values"), &dae_set_start_vector);
+  mod.method(raw_method("dae_set_start_names"), &dae_set_start_vector);
   mod.method(raw_method("dae_set_values"), &dae_set_values);
   mod.method(raw_method("dae_set_string_values"), &dae_set_string_values);
   mod.method(raw_method("dae_get_values"), &dae_get_values);

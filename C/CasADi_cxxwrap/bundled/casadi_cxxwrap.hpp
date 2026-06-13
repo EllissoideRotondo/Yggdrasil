@@ -200,10 +200,12 @@ inline void require_julia_callable(jl_value_t* function)
   }
 }
 
+// jl_call1 (unlike jl_apply_generic) catches a Julia exception and reports it
+// via jl_exception_occurred(), so a throwing callback cannot unwind through
+// the C++ frames of CasADi.
 inline jl_value_t* call_julia_function(jl_value_t* function, jl_value_t* argument)
 {
-  jl_value_t* args[1] = {argument};
-  return jl_apply_generic(function, args, 1);
+  return jl_call1(function, argument);
 }
 
 template<typename T>
@@ -232,7 +234,6 @@ void register_codegen_bindings(jlcxx::Module& mod);
 void register_interpolant_bindings(jlcxx::Module& mod);
 void register_opti_bindings(jlcxx::Module& mod);
 void register_builder_bindings(jlcxx::Module& mod);
-void register_dm_dict_bindings(jlcxx::Module& mod);
 void register_linsol_bindings(jlcxx::Module& mod);
 void register_utility_bindings(jlcxx::Module& mod);
 void register_serialization_bindings(jlcxx::Module& mod);
